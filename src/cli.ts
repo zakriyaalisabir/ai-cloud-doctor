@@ -120,24 +120,22 @@ program
     
     log.header('📊 OpenAI Usage History');
     console.log('');
-    console.log('Job ID           Name              Model        Date        In     Out    Total   Cost');
-    console.log('---------------- ----------------- ------------ ----------- ------ ------ ------- --------');
+    console.table(jobs.map(job => ({
+      'Job ID': job.id.substring(0, 8),
+      'Name': job.name,
+      'Model': job.model || 'unknown',
+      'Date': new Date(job.timestamp).toLocaleDateString(),
+      'In': job.inputTokens,
+      'Out': job.outputTokens,
+      'Total': job.totalTokens,
+      'Cost': job.cost ? `$${job.cost.toFixed(4)}` : 'N/A'
+    })));
     
-    let totalIn = 0, totalOut = 0, totalCost = 0;
+    const totalIn = jobs.reduce((sum, job) => sum + job.inputTokens, 0);
+    const totalOut = jobs.reduce((sum, job) => sum + job.outputTokens, 0);
+    const totalCost = jobs.reduce((sum, job) => sum + (job.cost || 0), 0);
     
-    jobs.forEach(job => {
-      const date = new Date(job.timestamp).toLocaleDateString();
-      const cost = job.cost ? `$${job.cost.toFixed(4)}` : 'N/A';
-      const model = job.model || 'unknown';
-      console.log(`${job.id.padEnd(16)} ${job.name.padEnd(17)} ${model.padEnd(12)} ${date.padEnd(11)} ${job.inputTokens.toString().padStart(6)} ${job.outputTokens.toString().padStart(6)} ${job.totalTokens.toString().padStart(7)} ${cost.padStart(8)}`);
-      
-      totalIn += job.inputTokens;
-      totalOut += job.outputTokens;
-      totalCost += job.cost || 0;
-    });
-    
-    console.log('---------------- ----------------- ------------ ----------- ------ ------ ------- --------');
-    console.log(`${'TOTAL'.padEnd(16)} ${' '.padEnd(17)} ${' '.padEnd(12)} ${' '.padEnd(11)} ${totalIn.toString().padStart(6)} ${totalOut.toString().padStart(6)} ${(totalIn + totalOut).toString().padStart(7)} ${'$' + totalCost.toFixed(4).padStart(7)}`);
+    console.log(`\nTOTAL: ${totalIn + totalOut} tokens (${totalIn} in, ${totalOut} out) - $${totalCost.toFixed(4)}`);
   });
 
 // Scan command

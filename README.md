@@ -1,88 +1,114 @@
 # ai-cloud-doctor
 
-`ai-cloud-doctor` is a simple CLI tool that provides basic health checks for AWS accounts and Terraform plans using only built‑in Node.js APIs.  It avoids third party dependencies so it can run in restricted or offline environments.
+AI-powered AWS analysis CLI tool that provides cost optimization, Lambda tuning, log analysis, and Terraform plan reviews using OpenAI.
 
-The tool does **not** make any changes to your AWS infrastructure; instead it reads configuration and credentials from a local JSON file (`~/.ai-cloud-doctor-configs.json`) or environment variables.  It then outputs recommendations or stub analyses.
+## Features
+
+- **Cost Analysis**: AWS Cost Explorer integration with AI-powered optimization recommendations
+- **Lambda Optimization**: Performance analysis and tuning suggestions for Lambda functions
+- **Log Analysis**: CloudWatch logs analysis with natural language queries
+- **Terraform Review**: Security and best practices analysis for Terraform plans
+- **Token Tracking**: Complete OpenAI usage tracking with cost monitoring
+- **Job History**: Detailed logs of all analysis jobs with unique IDs
 
 ## Installation
 
-Clone the repository and run:
-
 ```bash
+git clone <repository>
 cd ai-cloud-doctor
 npm install
 npm run build
-npm link  # optional, to install globally as `ai-cloud-doctor`
+npm link  # Install globally as 'ai-cloud-doctor'
 ```
-
-After linking, you can invoke the CLI with `ai-cloud-doctor`.
 
 ## Configuration
 
-To avoid reentering credentials every run, store your OpenAI and AWS credentials in a JSON file in your home directory:
+Configure credentials and settings:
+
+```bash
+ai-cloud-doctor configure
+```
+
+Or manually create `~/.ai-cloud-doctor-configs.json`:
 
 ```json
 {
   "openaiKey": "sk-your-openai-key",
+  "model": "gpt-5-nano",
+  "maxTokens": 10000,
+  "scanPeriod": 30,
   "region": "us-east-1",
   "awsCredentials": {
     "accessKeyId": "AKIA...",
-    "secretAccessKey": "....",
+    "secretAccessKey": "...",
     "sessionToken": "..."
   }
 }
 ```
 
-Save this file as `~/.ai-cloud-doctor-configs.json`.  The CLI will read this file automatically.  You can also override any value via environment variables (`OPENAI_API_KEY`, `AWS_ACCESS_KEY_ID`, etc.) or command line flags.
-
 ## Usage
 
-### Full scan
-
-Run all checks (cost, terraform, lambda, logs) in auto mode:
-
+### Full Analysis
 ```bash
 ai-cloud-doctor scan --mode auto
 ```
 
-### Terraform plan doctor
-
-Explain risks in a Terraform plan (stub implementation):
-
+### Individual Analyzers
 ```bash
+# Cost analysis
+ai-cloud-doctor cost --scanPeriod 7
+
+# Lambda optimization
+ai-cloud-doctor lambda --question "Find timeout issues"
+
+# Log analysis
+ai-cloud-doctor logs --question "Show error patterns"
+
+# Terraform review
 ai-cloud-doctor tf --tf-plan ./plan.json
 ```
 
-### Cost analysis (stub)
-
+### Token Usage Tracking
 ```bash
-ai-cloud-doctor cost
+ai-cloud-doctor usage
 ```
 
-### Lambda tuning (stub)
-
-```bash
-ai-cloud-doctor lambda
+Shows detailed job history:
+```
+Job ID           Name              Model        Date        In     Out    Total   Cost
+---------------- ----------------- ------------ ----------- ------ ------ ------- --------
+a1b2c3d4e5f6g7h8 cost-analysis     gpt-5-nano   1/15/2024     150     75     225  $0.0004
 ```
 
-### Natural‑language log query (stub)
+## Output Format
 
-```bash
-ai-cloud-doctor logs --question "Top functions by timeout errors in last hour"
-```
+All AI analysis uses structured table format:
 
-### Offline mode
+| Section | Details |
+|---------|---------|
+| 🔍 ANALYSIS | • Key findings and patterns |
+| 📊 TOP COSTS | • Highest cost services |
+| 💡 RECOMMENDATIONS | • Optimization suggestions |
+| ⚡ QUICK WINS | • Immediate actions |
 
-Use `--mode offline` to prevent any attempt to access AWS services.  This is the default when no AWS credentials are available.
+## Files
 
-## Development
+- `~/.ai-cloud-doctor-configs.json` - Configuration and credentials
+- `~/.ai-cloud-doctor-jobs.json` - Job execution logs and token usage
 
-This project is written in TypeScript and compiled to ES modules in the `dist` directory.
+## Modes
 
-To run the unit tests:
+- **auto**: Use AWS credentials if available, offline otherwise
+- **live**: Force AWS API calls (requires credentials)
+- **offline**: Skip AWS calls, provide stub analysis
 
-```bash
-npm test
-```
+## Scan Periods
 
-Tests use Node.js built‑in test runner (`node --test`) and target the compiled output.
+- 1, 7, 30, 120, 365 days for cost and performance analysis
+
+## Requirements
+
+- Node.js 18+
+- AWS CLI configured (for live mode)
+- OpenAI API key
+- AWS credentials (for live analysis)
