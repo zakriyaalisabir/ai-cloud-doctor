@@ -135,7 +135,7 @@ program
     const totalOut = jobs.reduce((sum, job) => sum + job.outputTokens, 0);
     const totalCost = jobs.reduce((sum, job) => sum + (job.cost || 0), 0);
     
-    console.log(`\nTOTAL: ${totalIn + totalOut} tokens (${totalIn} in, ${totalOut} out) - $${totalCost.toFixed(4)}`);
+    console.log(`\n${chalk.bold('TOTAL:')} ${chalk.cyan(totalIn + totalOut)} tokens (${chalk.green(totalIn)} in, ${chalk.yellow(totalOut)} out) - ${chalk.red('$' + totalCost.toFixed(4))}`);
   });
 
 // Scan command
