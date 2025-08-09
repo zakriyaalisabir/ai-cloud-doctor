@@ -8,6 +8,12 @@ import * as os from "node:os";
 export interface AppConfig {
   /** OpenAI API key, if configured */
   openaiKey?: string;
+  /** OpenAI model to use */
+  model?: string;
+  /** Maximum tokens for OpenAI responses */
+  maxTokens?: number;
+  /** Scan/analysis period in days */
+  scanPeriod?: number;
   /** AWS default region */
   region?: string;
   /** AWS credentials; if present the tool will attempt to run in live mode */
@@ -61,6 +67,30 @@ export async function loadConfig(cli: Record<string, any> = {}): Promise<AppConf
     cfg.openaiKey = envOpenAI;
   } else if (fileCfg.openaiKey) {
     cfg.openaiKey = fileCfg.openaiKey;
+  }
+
+  // model: CLI overrides file
+  if (cli.model) {
+    cfg.model = String(cli.model);
+  } else if (fileCfg.model) {
+    cfg.model = fileCfg.model;
+  }
+
+  // maxTokens: CLI overrides file
+  if (cli.maxTokens) {
+    cfg.maxTokens = parseInt(String(cli.maxTokens));
+  } else if (fileCfg.maxTokens) {
+    cfg.maxTokens = fileCfg.maxTokens;
+  }
+
+  // scanPeriod: CLI overrides file, validate allowed values
+  if (cli.scanPeriod) {
+    const period = parseInt(String(cli.scanPeriod));
+    if ([1, 7, 30, 120, 365].includes(period)) {
+      cfg.scanPeriod = period;
+    }
+  } else if (fileCfg.scanPeriod) {
+    cfg.scanPeriod = fileCfg.scanPeriod;
   }
 
   // region: CLI overrides env and file
@@ -126,4 +156,11 @@ export async function loadConfig(cli: Record<string, any> = {}): Promise<AppConf
   }
 
   return cfg;
+}
+
+/** Save configuration to the persistent file */
+export async function saveConfig(config: Partial<AppConfig>): Promise<void> {
+  const home = os.homedir() || process.env.HOME || process.env.USERPROFILE || ".";
+  const cfgPath = path.join(home, CONFIG_FILENAME);
+  await fs.writeFile(cfgPath, JSON.stringify(config, null, 2), { encoding: "utf8", mode: 0o600 });
 }

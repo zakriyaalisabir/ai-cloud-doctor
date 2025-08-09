@@ -1,23 +1,41 @@
 import type { AppConfig } from "../config.js";
 import { makeOpenAI } from "../providers/openai.js";
+import { execSync } from "node:child_process";
 
-/**
- * Analyse logs based on a natural language question.  Offline mode
- * constructs a simple CloudWatch Logs Insights query without
- * contacting AWS; live mode would normally execute the query and
- * summarise the results.  In this stub implementation we either
- * return a proposed query or a generic placeholder.
- */
-export async function analyzeLogs(cfg: AppConfig, opts: Record<string, any>, live: { live: boolean }): Promise<string> {
-  // determine the user's question
-  const question = opts.question || opts.q || "top timeouts in last 1h by function";
-  // simple helper to craft a query from a question
-  function buildQuery(q: string): string {
-    const sanitized = q.replace(/[\n\r]/g, " ").replace(/\s+/g, " ").trim();
-    // very basic heuristic: search for all messages containing the question text
-    return `fields @timestamp, @message\n| filter @message like /${sanitized.replace(/\//g, "\\/")}/\n| stats count() by bin(60s)`;
+async function getAwsLogsData(cfg: AppConfig, question: string): Promise<string> {
+  try {
+    // Get log groups
+    const logGroupsCmd = `aws logs describe-log-groups --limit 10 --profile ai-cloud-doctor --output json`;
+    const logGroupsData = JSON.parse(execSync(logGroupsCmd, { encoding: 'utf8', timeout: 30000 }));
+    
+    // Build query based on question
+    function buildQuery(q: string): string {
+      const sanitized = q.toLowerCase();
+      if (sanitized.includes('error')) {
+        return 'fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 100';
+      } else if (sanitized.includes('timeout')) {
+        return 'fields @timestamp, @message | filter @message like /timeout/i | sort @timestamp desc | limit 100';
+      } else {
+        return `fields @timestamp, @message | filter @message like /${q.replace(/[\\\/.]/g, '')}/i | sort @timestamp desc | limit 100`;
+      }
+    }
+    
+    const query = buildQuery(question);
+    
+    return JSON.stringify({ LogGroups: logGroupsData.logGroups, Query: query }, null, 2);
+  } catch (error) {
+    return `Error fetching AWS logs data: ${error instanceof Error ? error.message : String(error)}`;
   }
+}
+
+export async function analyzeLogs(cfg: AppConfig, opts: Record<string, any>, live: { live: boolean }): Promise<string> {
+  const question = opts.question || opts.q || "recent errors";
+  
   if (!live.live) {
+    function buildQuery(q: string): string {
+      const sanitized = q.replace(/[\n\r]/g, " ").replace(/\s+/g, " ").trim();
+      return `fields @timestamp, @message\n| filter @message like /${sanitized.replace(/\//g, "\\/")}/\n| stats count() by bin(60s)`;
+    }
     const query = buildQuery(question);
     return [
       "### Logs",
@@ -28,14 +46,17 @@ export async function analyzeLogs(cfg: AppConfig, opts: Record<string, any>, liv
       "_Offline mode: run this query in CloudWatch Logs Insights or provide a logs export for analysis._"
     ].join("\n");
   }
-  // live mode requires OpenAI key for summary stub
+  
   if (!cfg.openaiKey) {
     return "### Logs\nOpenAI API key missing; cannot perform logs analysis.";
   }
-  const openai = makeOpenAI(cfg.openaiKey);
-  const summary = await openai.ask(
-    "You are ai-log-copilot. Summarise CloudWatch Logs queries.",
-    `User question: ${question}`
+  
+  const logsData = await getAwsLogsData(cfg, question);
+  const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
+  
+  const message = await openai.ask(
+    "You are a log analyzer. Analyze the CloudWatch logs data and provide: 1) Key patterns found, 2) Error trends, 3) Actionable insights. Keep response under 300 words.",
+    `Question: ${question}\n\nLogs Data:\n${logsData}`
   );
-  return `### Logs\n${summary}`;
+  return `### Logs\n${logsData}\n\n${message}`;
 }

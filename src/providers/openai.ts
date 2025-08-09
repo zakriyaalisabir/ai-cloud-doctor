@@ -1,21 +1,46 @@
-/**
- * Very lightweight stub of an OpenAI client.  Since network access is
- * unavailable in this environment, this implementation simply echoes
- * the user's input.  When a real OpenAI API key is provided and network
- * connectivity is available, this function could be extended to call
- * the OpenAI REST API.
- */
-export function makeOpenAI(openaiKey: string | undefined, model?: string) {
+import OpenAI from 'openai';
+
+export function makeOpenAI(openaiKey: string | undefined, model = "gpt-5-nano", maxTokens = 500) {
   if (!openaiKey) {
     throw new Error("OPENAI_API_KEY missing.  Set it via environment variable or ~/.ai-cloud-doctor-configs.json");
   }
-  // model is ignored in this stub but accepted for compatibility
+  
+  const openai = new OpenAI({ apiKey: openaiKey });
+  
   return {
     async ask(system: string, user: string): Promise<string> {
-      // In a real implementation, you would make a network request here.
-      const promptPreview = system?.trim().slice(0, 32).replace(/\n/g, " ");
-      const userPreview = user?.trim().slice(0, 64).replace(/\n/g, " ");
-      return `OpenAI stub response based on system prompt: "${promptPreview}" and user input: "${userPreview}".`;
+      const requestBody: any = {
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user }
+        ]
+      };
+
+      if (model.startsWith('gpt-5')) {
+        requestBody.temperature = 1;
+        requestBody.max_completion_tokens = maxTokens;
+      } else {
+        requestBody.max_tokens = maxTokens;
+        requestBody.temperature = 0.7;
+      }
+
+      try {
+        const completion = await openai.chat.completions.create(requestBody);
+        
+        if (!completion.choices || completion.choices.length === 0) {
+          return "OpenAI returned no choices";
+        }
+        
+        const content = completion.choices[0]?.message?.content;
+        if (!content) {
+          return `OpenAI returned empty content. Response: ${JSON.stringify(completion.choices[0])}`;
+        }
+        
+        return content;
+      } catch (error) {
+        return `OpenAI API error: ${error instanceof Error ? error.message : String(error)}`;
+      }
     },
   };
 }

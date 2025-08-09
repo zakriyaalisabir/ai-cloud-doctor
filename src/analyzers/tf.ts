@@ -29,7 +29,7 @@ export async function analyzeTf(cfg: AppConfig, opts: Record<string, any>): Prom
   const resourceChanges = Array.isArray(planObj.resource_changes) ? planObj.resource_changes.length : 0;
   // if openaiKey available, call stub to produce an analysis
   if (cfg.openaiKey) {
-    const openai = makeOpenAI(cfg.openaiKey);
+    const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
     const summary = await openai.ask(
       "You are ai-tf-doctor. Provide a high-level summary of a Terraform plan.",
       `The plan includes ${resourceChanges} resource changes.`

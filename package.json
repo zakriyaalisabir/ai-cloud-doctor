@@ -18,5 +18,11 @@
     "node": ">=18.18"
   },
   "license": "MIT",
-  "repository": "https://example.com/ai-cloud-doctor"
+  "repository": "https://example.com/ai-cloud-doctor",
+  "dependencies": {
+    "chalk": "^5.5.0",
+    "commander": "^14.0.0",
+    "openai": "^5.12.2",
+    "ora": "^8.2.0"
+  }
 }
