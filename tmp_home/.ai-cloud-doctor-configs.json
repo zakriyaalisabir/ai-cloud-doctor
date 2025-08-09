@@ -1,0 +1,7 @@
+{
+  "openaiKey": "sk-abc123",
+  "awsCredentials": {
+    "accessKeyId": "AKID",
+    "secretAccessKey": "SECRET"
+  }
+}

@@ -1,0 +1,129 @@
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
+
+/**
+ * Configuration object returned by loadConfig.
+ */
+export interface AppConfig {
+  /** OpenAI API key, if configured */
+  openaiKey?: string;
+  /** AWS default region */
+  region?: string;
+  /** AWS credentials; if present the tool will attempt to run in live mode */
+  awsCredentials?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken?: string;
+  };
+  /** Analysis mode derived from CLI (--mode) */
+  offline?: boolean;
+}
+
+/** Path to the persistent configuration file.  Credentials and other settings
+ * are stored here to avoid repeatedly prompting the user.  The file is
+ * created in the user's home directory if it does not already exist.
+ */
+const CONFIG_FILENAME = ".ai-cloud-doctor-configs.json";
+
+/** Load configuration by merging values from the persistent file,
+ * environment variables, and command line options.  If credentials
+ * are present in environment variables but not in the file, they are
+ * persisted to the file automatically so subsequent runs don't require
+ * them to be set again.
+ */
+export async function loadConfig(cli: Record<string, any> = {}): Promise<AppConfig> {
+  const home = os.homedir() || process.env.HOME || process.env.USERPROFILE || ".";
+  const cfgPath = path.join(home, CONFIG_FILENAME);
+  let fileCfg: Partial<AppConfig> = {};
+  try {
+    const contents = await fs.readFile(cfgPath, "utf8");
+    fileCfg = JSON.parse(contents);
+  } catch {
+    // file might not exist or be malformed; ignore for now
+    fileCfg = {};
+  }
+
+  // read from environment
+  const envOpenAI = process.env.OPENAI_API_KEY;
+  const envRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
+  const envAwsAccess = process.env.AWS_ACCESS_KEY_ID;
+  const envAwsSecret = process.env.AWS_SECRET_ACCESS_KEY;
+  const envAwsToken = process.env.AWS_SESSION_TOKEN;
+
+  // start building configuration
+  const cfg: AppConfig = {};
+
+  // openaiKey: CLI option overrides env and file
+  if (cli.openaiKey) {
+    cfg.openaiKey = String(cli.openaiKey);
+  } else if (envOpenAI) {
+    cfg.openaiKey = envOpenAI;
+  } else if (fileCfg.openaiKey) {
+    cfg.openaiKey = fileCfg.openaiKey;
+  }
+
+  // region: CLI overrides env and file
+  if (cli.region) {
+    cfg.region = String(cli.region);
+  } else if (envRegion) {
+    cfg.region = envRegion;
+  } else if (fileCfg.region) {
+    cfg.region = fileCfg.region;
+  }
+
+  // AWS credentials: prefer CLI?  environment variables, then file
+  let awsCreds: AppConfig["awsCredentials"] | undefined;
+  if (envAwsAccess && envAwsSecret) {
+    awsCreds = {
+      accessKeyId: envAwsAccess,
+      secretAccessKey: envAwsSecret,
+      sessionToken: envAwsToken,
+    };
+  } else if (fileCfg.awsCredentials) {
+    awsCreds = fileCfg.awsCredentials;
+  }
+
+  // offline mode: CLI option --mode overrides everything
+  const mode = (cli.mode || "auto").toString();
+  if (mode === "offline") {
+    cfg.offline = true;
+  } else if (mode === "live") {
+    cfg.offline = false;
+  } else {
+    // auto: offline true if no credentials present
+    cfg.offline = !awsCreds;
+  }
+
+  if (awsCreds) {
+    cfg.awsCredentials = awsCreds;
+  }
+
+  // persist credentials and settings to config file if they didn't exist
+  const toPersist: Partial<AppConfig> = { ...fileCfg };
+  let needsWrite = false;
+  // store openai key
+  if (cfg.openaiKey && !fileCfg.openaiKey) {
+    toPersist.openaiKey = cfg.openaiKey;
+    needsWrite = true;
+  }
+  // store region
+  if (cfg.region && !fileCfg.region) {
+    toPersist.region = cfg.region;
+    needsWrite = true;
+  }
+  // store AWS credentials
+  if (awsCreds && !fileCfg.awsCredentials) {
+    toPersist.awsCredentials = awsCreds;
+    needsWrite = true;
+  }
+  if (needsWrite) {
+    try {
+      await fs.writeFile(cfgPath, JSON.stringify(toPersist, null, 2), { encoding: "utf8", mode: 0o600 });
+    } catch {
+      // ignore write errors
+    }
+  }
+
+  return cfg;
+}
