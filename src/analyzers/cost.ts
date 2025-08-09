@@ -1,5 +1,6 @@
 import type { AppConfig } from "../config.js";
 import { makeOpenAI } from "../providers/openai.js";
+import { logJob } from "../utils/jobTracker.js";
 import { promises as fs } from "node:fs";
 import { execSync } from "node:child_process";
 
@@ -46,9 +47,13 @@ export async function analyzeCost(cfg: AppConfig, live: { live: boolean }, opts:
   const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
   const question = opts.question || "Analyze this AWS cost data and suggest specific savings opportunities";
   
-  const message = await openai.ask(
-    "You are a concise AWS cost analyzer. Analyze the cost data and provide: 1) Top spending services summary, 2) Cost trends, 3) Key recommendations. Keep response under 300 words.",
-    `${question}\n\nAWS Cost Data:\n${costData}`
+  const response = await openai.ask(
+    `Analyze this AWS cost data and provide insights:\n\n${costData}\n\nReturn your response formatted ONLY in this exact structure for CLI display. \nFollow this markdown layout strictly:\n\n| Section | Details |\n|---------|---------|\n| 🔍 ANALYSIS | • Finding 1 (Service: description) <br> • Finding 2 (Service: description) |\n| 📊 TOP COSTS | • Cost 1 (Service: $amount description) <br> • Cost 2 (Service: $amount description) |\n| 💡 RECOMMENDATIONS | • Rec 1 (Service: description) <br> • Rec 2 (Service: description) |\n| ⚡ QUICK WINS | • Win 1 (Service: description) <br> • Win 2 (Service: description) |\n\nRules:\n- Use ONLY the table above.\n- Replace the placeholder bullet points with specific findings.\n- Do not add extra text outside the table.\n- Keep total word count under 400 words.`,
+    question
   );
-  return `### Cost\n${costData}\n\n${message}`;
+  
+  const jobId = await logJob('cost-analysis', response.inputTokens, response.outputTokens, response.cost, response.model);
+  console.log(`\n📊 Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
+  
+  return `### Cost\n${costData}\n\n${response.content}`;
 }

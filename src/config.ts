@@ -2,6 +2,17 @@ import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
+export interface JobLog {
+  id: string;
+  name: string;
+  timestamp: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cost?: number;
+  model?: string;
+}
+
 /**
  * Configuration object returned by loadConfig.
  */

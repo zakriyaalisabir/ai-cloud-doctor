@@ -20,6 +20,9 @@ export function formatAwsJson(jsonData: string, title?: string): string {
     } else if (data.LogGroups) {
       // CloudWatch logs data
       return formatLogsData(data);
+    } else if (data.ResourceChanges) {
+      // Terraform plan data
+      return formatTerraformData(data);
     } else {
       // Generic JSON formatting
       return formatGenericJson(data);
@@ -148,6 +151,63 @@ function formatLogsData(data: any): string {
     formatted += chalk.bold.blue('\n🔍 Suggested Query\n');
     formatted += chalk.dim('─'.repeat(30)) + '\n';
     formatted += chalk.cyan(data.Query) + '\n';
+  }
+  
+  return formatted;
+}
+
+function formatTerraformData(data: any): string {
+  let formatted = chalk.bold.magenta('\n🏠 Terraform Plan Analysis\n');
+  formatted += chalk.dim('─'.repeat(60)) + '\n';
+  
+  // Summary section
+  if (data.Summary) {
+    formatted += chalk.bold.white('\n📊 Plan Summary\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    formatted += chalk.white(`Total Changes: `) + chalk.cyan(data.Summary.TotalChanges.toString()) + '\n';
+    
+    if (data.Summary.Actions) {
+      formatted += chalk.white('\nActions:\n');
+      Object.entries(data.Summary.Actions).forEach(([action, count]: [string, any]) => {
+        let actionColor = chalk.white;
+        if (action === 'create') actionColor = chalk.green;
+        else if (action === 'destroy') actionColor = chalk.red;
+        else if (action === 'update') actionColor = chalk.yellow;
+        
+        formatted += actionColor(`  ${action}: `) + chalk.cyan(count.toString()) + '\n';
+      });
+    }
+  }
+  
+  // Resource changes table
+  if (data.ResourceChanges && data.ResourceChanges.length > 0) {
+    formatted += chalk.bold.white('\n📋 Resource Changes\n');
+    formatted += chalk.dim('─'.repeat(80)) + '\n';
+    
+    formatted += chalk.bold.white('Resource'.padEnd(35)) + 
+                chalk.bold.white('Type'.padEnd(20)) + 
+                chalk.bold.white('Action'.padEnd(15)) + 
+                chalk.bold.white('Provider') + '\n';
+    formatted += chalk.dim('─'.repeat(80)) + '\n';
+    
+    for (const change of data.ResourceChanges.slice(0, 20)) {
+      const address = change.Address.length > 32 ? change.Address.substring(0, 32) + '...' : change.Address;
+      const type = change.Type.length > 17 ? change.Type.substring(0, 17) + '...' : change.Type;
+      
+      let actionColor = chalk.white;
+      if (change.Action.includes('create')) actionColor = chalk.green;
+      else if (change.Action.includes('destroy')) actionColor = chalk.red;
+      else if (change.Action.includes('update')) actionColor = chalk.yellow;
+      
+      formatted += chalk.cyan(address.padEnd(35)) + 
+                  chalk.white(type.padEnd(20)) + 
+                  actionColor(change.Action.padEnd(15)) + 
+                  chalk.dim(change.Provider) + '\n';
+    }
+    
+    if (data.ResourceChanges.length > 20) {
+      formatted += chalk.dim(`\n... and ${data.ResourceChanges.length - 20} more changes\n`);
+    }
   }
   
   return formatted;

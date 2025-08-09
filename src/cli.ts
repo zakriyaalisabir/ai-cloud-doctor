@@ -9,6 +9,8 @@ import { analyzeTf } from "./analyzers/tf.js";
 import { analyzeLambda } from "./analyzers/lambda.js";
 import { analyzeLogs } from "./analyzers/logs.js";
 import { formatCostAnalysis, formatLambdaAnalysis, formatLogsAnalysis } from "./utils/formatter.js";
+import { formatMultipleTables } from "./utils/tableFormatter.js";
+import { getJobLogs } from "./utils/jobTracker.js";
 
 const program = new Command();
 
@@ -64,7 +66,7 @@ async function configureCredentials() {
   const openaiKey = await ask(`OpenAI API Key [${existing.openaiKey ? chalk.green('***') : chalk.red('none')}]: `);
   const model = await ask(`OpenAI Model [${existing.model || 'gpt-5-nano'}]: `);
   const maxTokens = await ask(`Max Tokens [${existing.maxTokens || '500'}]: `);
-  const scanPeriod = await ask(`Scan Period - 1,7,30,120,365 days [${existing.scanPeriod || '30'}]: `);
+  const scanPeriod = await ask(`Scan Period (No. of Days) [${existing.scanPeriod || '30'}]: `);
   const region = await ask(`AWS Region [${existing.region || 'us-east-1'}]: `);
   const accessKeyId = await ask(`AWS Access Key ID [${existing.awsCredentials?.accessKeyId ? chalk.green('***') : chalk.red('none')}]: `);
   const secretAccessKey = await ask(`AWS Secret Access Key [${existing.awsCredentials?.secretAccessKey ? chalk.green('***') : chalk.red('none')}]: `);
@@ -103,6 +105,40 @@ program
   .command('configure')
   .description('Configure credentials and API keys')
   .action(configureCredentials);
+
+// Usage command
+program
+  .command('usage')
+  .description('Show OpenAI token usage and job history')
+  .action(async () => {
+    const jobs = await getJobLogs();
+    
+    if (jobs.length === 0) {
+      log.info('No jobs found');
+      return;
+    }
+    
+    log.header('📊 OpenAI Usage History');
+    console.log('');
+    console.log('Job ID           Name              Model        Date        In     Out    Total   Cost');
+    console.log('---------------- ----------------- ------------ ----------- ------ ------ ------- --------');
+    
+    let totalIn = 0, totalOut = 0, totalCost = 0;
+    
+    jobs.forEach(job => {
+      const date = new Date(job.timestamp).toLocaleDateString();
+      const cost = job.cost ? `$${job.cost.toFixed(4)}` : 'N/A';
+      const model = job.model || 'unknown';
+      console.log(`${job.id.padEnd(16)} ${job.name.padEnd(17)} ${model.padEnd(12)} ${date.padEnd(11)} ${job.inputTokens.toString().padStart(6)} ${job.outputTokens.toString().padStart(6)} ${job.totalTokens.toString().padStart(7)} ${cost.padStart(8)}`);
+      
+      totalIn += job.inputTokens;
+      totalOut += job.outputTokens;
+      totalCost += job.cost || 0;
+    });
+    
+    console.log('---------------- ----------------- ------------ ----------- ------ ------ ------- --------');
+    console.log(`${'TOTAL'.padEnd(16)} ${' '.padEnd(17)} ${' '.padEnd(12)} ${' '.padEnd(11)} ${totalIn.toString().padStart(6)} ${totalOut.toString().padStart(6)} ${(totalIn + totalOut).toString().padStart(7)} ${'$' + totalCost.toFixed(4).padStart(7)}`);
+  });
 
 // Scan command
 program
@@ -195,7 +231,19 @@ program
     
     const cfg = await loadConfig(options);
     const result = await analyzeTf(cfg, options);
-    console.log(result);
+    
+    // Format Terraform output
+    const content = result.replace(/^### Terraform\n/, '');
+    const parts = content.split('\n\n');
+    const tableData = parts[0];
+    const aiAnalysis = parts.slice(1).join('\n\n');
+    
+    let formatted = formatMultipleTables(tableData);
+    if (aiAnalysis) {
+      formatted += '\n' + chalk.white(aiAnalysis);
+    }
+    
+    console.log(formatted);
   });
 
 // Logs command

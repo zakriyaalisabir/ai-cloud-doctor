@@ -1,6 +1,14 @@
 import OpenAI from 'openai';
 
-export function makeOpenAI(openaiKey: string | undefined, model = "gpt-5-nano", maxTokens = 500) {
+export interface OpenAIResponse {
+  content: string;
+  inputTokens: number;
+  outputTokens: number;
+  cost?: number;
+  model?: string;
+}
+
+export function makeOpenAI(openaiKey: string | undefined, model = "gpt-5-nano", maxTokens = 500): { ask: (system: string, user: string) => Promise<OpenAIResponse> } {
   if (!openaiKey) {
     throw new Error("OPENAI_API_KEY missing.  Set it via environment variable or ~/.ai-cloud-doctor-configs.json");
   }
@@ -8,7 +16,7 @@ export function makeOpenAI(openaiKey: string | undefined, model = "gpt-5-nano", 
   const openai = new OpenAI({ apiKey: openaiKey });
   
   return {
-    async ask(system: string, user: string): Promise<string> {
+    async ask(system: string, user: string): Promise<OpenAIResponse> {
       const requestBody: any = {
         model,
         messages: [
@@ -29,17 +37,35 @@ export function makeOpenAI(openaiKey: string | undefined, model = "gpt-5-nano", 
         const completion = await openai.chat.completions.create(requestBody);
         
         if (!completion.choices || completion.choices.length === 0) {
-          return "OpenAI returned no choices";
+          return {
+            content: "OpenAI returned no choices",
+            inputTokens: 0,
+            outputTokens: 0
+          };
         }
         
         const content = completion.choices[0]?.message?.content;
         if (!content) {
-          return `OpenAI returned empty content. Response: ${JSON.stringify(completion.choices[0])}`;
+          return {
+            content: `OpenAI returned empty content. Response: ${JSON.stringify(completion.choices[0])}`,
+            inputTokens: 0,
+            outputTokens: 0
+          };
         }
         
-        return content;
+        return {
+          content,
+          inputTokens: completion.usage?.prompt_tokens || 0,
+          outputTokens: completion.usage?.completion_tokens || 0,
+          cost: (completion as any).usage?.total_cost,
+          model: completion.model
+        };
       } catch (error) {
-        return `OpenAI API error: ${error instanceof Error ? error.message : String(error)}`;
+        return {
+          content: `OpenAI API error: ${error instanceof Error ? error.message : String(error)}`,
+          inputTokens: 0,
+          outputTokens: 0
+        };
       }
     },
   };

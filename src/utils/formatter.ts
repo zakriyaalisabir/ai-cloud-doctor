@@ -12,9 +12,7 @@ export function formatCostAnalysis(rawOutput: string): string {
   let formatted = formatMultipleTables(tableData);
   
   if (aiAnalysis) {
-    formatted += chalk.bold.yellow('\n💡 AI Analysis:\n');
-    formatted += chalk.dim('─'.repeat(50)) + '\n';
-    formatted += chalk.white(aiAnalysis);
+    formatted += '\n' + chalk.white(aiAnalysis);
   }
   
   return formatted;
@@ -31,9 +29,7 @@ export function formatLambdaAnalysis(rawOutput: string): string {
   let formatted = formatMultipleTables(tableData);
   
   if (aiAnalysis) {
-    formatted += chalk.bold.yellow('\n💡 AI Analysis:\n');
-    formatted += chalk.dim('─'.repeat(50)) + '\n';
-    formatted += chalk.white(aiAnalysis);
+    formatted += '\n' + chalk.white(aiAnalysis);
   }
   
   return formatted;
@@ -50,9 +46,7 @@ export function formatLogsAnalysis(rawOutput: string): string {
   let formatted = formatMultipleTables(tableData);
   
   if (aiAnalysis) {
-    formatted += chalk.bold.yellow('\n💡 AI Analysis:\n');
-    formatted += chalk.dim('─'.repeat(50)) + '\n';
-    formatted += chalk.white(aiAnalysis);
+    formatted += '\n' + chalk.white(aiAnalysis);
   }
   
   return formatted;
