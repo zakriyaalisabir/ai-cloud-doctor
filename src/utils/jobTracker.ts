@@ -37,7 +37,8 @@ export async function logJob(jobName: string, inputTokens: number, outputTokens:
 
 async function calculateCost(inputTokens: number, outputTokens: number, cachedTokens: number = 0): Promise<number> {
   const config = await import('../config.js').then(m => m.loadConfig());
-  const inputCost = (inputTokens / 1000000) * (config.inputTokenCost || 0.15);
+  const actualInputTokens = inputTokens - cachedTokens;
+  const inputCost = (actualInputTokens / 1000000) * (config.inputTokenCost || 0.15);
   const outputCost = (outputTokens / 1000000) * (config.outputTokenCost || 0.6);
   const cachedCost = (cachedTokens / 1000000) * (config.cachedTokenCost || 0.075);
   return inputCost + outputCost + cachedCost;

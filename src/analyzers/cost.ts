@@ -55,5 +55,39 @@ export async function analyzeCost(cfg: AppConfig, live: { live: boolean }, opts:
   const jobId = await logJob('cost-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
   console.log(`\n📊 Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
   
-  return `### Cost\n${costData}\n\n${response.content}`;
+  // Parse and display with improved formatting
+  const lines = response.content.split('\n');
+  const chalk = (await import('chalk')).default;
+  
+  console.log('\n' + chalk.bold.cyan('💰 Cost Analysis Results'));
+  console.log(chalk.gray('─'.repeat(60)));
+  
+  lines.forEach(line => {
+    if (line.includes('|') && (line.includes('🔍') || line.includes('📊') || line.includes('💡') || line.includes('⚡'))) {
+      const parts = line.split('|');
+      if (parts.length >= 3) {
+        const section = parts[1].trim();
+        const details = parts[2].replace(/<br>/g, '\n').replace(/• /g, '').trim();
+        if (details && details !== 'Details') {
+          console.log('\n' + chalk.bold.white(section));
+          
+          const items = details.split('\n').filter(item => item.trim());
+          items.forEach(item => {
+            const cleanItem = item.trim();
+            if (cleanItem) {
+              console.log(chalk.yellow('  • ') + chalk.white(cleanItem));
+            }
+          });
+        }
+      }
+    }
+  });
+  
+  console.log('\n' + chalk.gray('─'.repeat(60)));
+  
+  // Display structured AWS cost data using formatAwsJson
+  const { formatAwsJson } = await import('../utils/tableFormatter.js');
+  console.log(formatAwsJson(costData));
+  
+  return `### Cost\nAnalysis complete`;
 }

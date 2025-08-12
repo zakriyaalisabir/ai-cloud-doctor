@@ -101,9 +101,9 @@ async function configureCredentials() {
     outputTokenCost: outputTokenCost ? parseFloat(outputTokenCost) : existing.outputTokenCost || 0.6,
     cachedTokenCost: cachedTokenCost ? parseFloat(cachedTokenCost) : existing.cachedTokenCost || 0.075,
     serviceTier: serviceTier || existing.serviceTier || 'auto',
-    reasoningEffort: reasoningEffort || existing.reasoningEffort || 'medium',
+    reasoningEffort: reasoningEffort || existing.reasoningEffort || 'low',
     temperature: temperature ? parseFloat(temperature) : existing.temperature || 0.7,
-    verbosity: verbosity || existing.verbosity || 'standard',
+    verbosity: verbosity || existing.verbosity || 'low',
     scanPeriod: validateScanPeriod(scanPeriod),
     region: region || existing.region || "us-east-1",
     awsCredentials: (accessKeyId || existing.awsCredentials?.accessKeyId) && (secretAccessKey || existing.awsCredentials?.secretAccessKey) ? {
@@ -216,7 +216,7 @@ program
     const result = await analyzeCost(cfg, live, options);
     spinner.succeed('Cost analysis complete');
 
-    console.log(formatCostAnalysis(result));
+    // Analysis already displayed by analyzer
   });
 
 // Lambda command
@@ -238,7 +238,7 @@ program
     const result = await analyzeLambda(cfg, live, options);
     spinner.succeed('Lambda analysis complete');
 
-    console.log(formatLambdaAnalysis(result));
+    // Analysis already displayed by analyzer
   });
 
 // Terraform command
@@ -249,21 +249,12 @@ program
   .action(async (options) => {
     log.header('🏗️  Analyzing Terraform plan...');
 
+    const spinner = ora('Loading configuration...').start();
     const cfg = await loadConfig(options);
+
+    spinner.text = 'Analyzing TF plan...';
     const result = await analyzeTf(cfg, options);
-
-    // Format Terraform output
-    const content = result.replace(/^### Terraform\n/, '');
-    const parts = content.split('\n\n');
-    const tableData = parts[0];
-    const aiAnalysis = parts.slice(1).join('\n\n');
-
-    let formatted = formatMultipleTables(tableData);
-    if (aiAnalysis) {
-      formatted += '\n' + chalk.white(aiAnalysis);
-    }
-
-    console.log(formatted);
+    spinner.succeed('TF plan analysis complete');
   });
 
 // Logs command

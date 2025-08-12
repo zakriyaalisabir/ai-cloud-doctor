@@ -15,7 +15,16 @@ async function getAwsLambdaData(cfg: AppConfig): Promise<string> {
     const metricsCmd = `aws cloudwatch get-metric-data --metric-data-queries '[{"Id":"m1","MetricStat":{"Metric":{"Namespace":"AWS/Lambda","MetricName":"Duration"},"Period":86400,"Stat":"Average"},"ReturnData":true},{"Id":"m2","MetricStat":{"Metric":{"Namespace":"AWS/Lambda","MetricName":"Invocations"},"Period":86400,"Stat":"Sum"},"ReturnData":true}]' --start-time ${startTime} --end-time ${endTime} --profile ai-cloud-doctor --output json`;
     const metricsData = JSON.parse(execSync(metricsCmd, { encoding: 'utf8', timeout: 30000 }));
     
-    return JSON.stringify({ Functions: functionsData.Functions, Metrics: metricsData }, null, 2);
+    // Limit data to reduce input tokens
+    const limitedFunctions = functionsData.Functions.slice(0, 20).map((fn: any) => ({
+      FunctionName: fn.FunctionName,
+      Runtime: fn.Runtime,
+      MemorySize: fn.MemorySize,
+      Timeout: fn.Timeout,
+      CodeSize: fn.CodeSize
+    }));
+    
+    return JSON.stringify({ Functions: limitedFunctions, Metrics: metricsData }, null, 2);
   } catch (error) {
     return `Error fetching AWS Lambda data: ${error instanceof Error ? error.message : String(error)}`;
   }
@@ -41,5 +50,48 @@ export async function analyzeLambda(cfg: AppConfig, live: { live: boolean }, opt
   const jobId = await logJob('lambda-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
   console.log(`\n⚡ Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
   
-  return `### Lambda\n${lambdaData}\n\n${response.content}`;
+  // Parse and display with improved formatting
+  const lines = response.content.split('\n');
+  const chalk = (await import('chalk')).default;
+  
+  console.log('\n' + chalk.bold.cyan('📊 Lambda Analysis Results'));
+  console.log(chalk.gray('─'.repeat(60)));
+  
+  lines.forEach(line => {
+    if (line.includes('|') && (line.includes('⚠️') || line.includes('⚙️') || line.includes('💰') || line.includes('⚡'))) {
+      const parts = line.split('|');
+      if (parts.length >= 3) {
+        const section = parts[1].trim();
+        const details = parts[2].replace(/<br>/g, '\n').replace(/• /g, '').trim();
+        if (details && details !== 'Details') {
+          console.log('\n' + chalk.bold.white(section));
+          
+          // Split details by bullet points and format each
+          const items = details.split('\n').filter(item => item.trim());
+          items.forEach(item => {
+            const cleanItem = item.trim();
+            if (cleanItem) {
+              // Extract function name if present
+              const funcMatch = cleanItem.match(/FunctionName: ([^)]+)/);
+              if (funcMatch) {
+                const funcName = funcMatch[1].length > 30 ? funcMatch[1].substring(0, 30) + '...' : funcMatch[1];
+                const description = cleanItem.replace(/.*?\)\s*/, '');
+                console.log(chalk.yellow('  • ') + chalk.cyan(funcName) + chalk.white(': ' + description));
+              } else {
+                console.log(chalk.yellow('  • ') + chalk.white(cleanItem));
+              }
+            }
+          });
+        }
+      }
+    }
+  });
+  
+  console.log('\n' + chalk.gray('─'.repeat(60)));
+  
+  // Display structured AWS Lambda data using formatAwsJson
+  const { formatAwsJson } = await import('../utils/tableFormatter.js');
+  console.log(formatAwsJson(lambdaData));
+  
+  return `### Lambda\nAnalysis complete`;
 }
