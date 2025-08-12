@@ -29,10 +29,14 @@ export function makeOpenAI(config: any): { ask: (system: string, user: string) =
         temperature: config.temperature || 1.0,
         verbosity: config.verbosity || 'standard',
         max_completion_tokens: config.maxTokens || 0,
-        max_tokens: config.maxTokens || 0,
         prompt_cache_key: `ai-cloud-doctor-${config.model || 'gpt-5-nano'}`,
         n: 1, // Number of completions results to generate
       };
+
+      if (!`${config.model}`.startsWith('gpt-5')) {
+        // max_token is not supported for GPT-5 models, use max_completion_tokens instead
+        requestBody.max_tokens = requestBody.max_completion_tokens || 0; // GPT-5 models have a higher limit
+      }
 
       try {
         const completion: OpenAI.ChatCompletion = await openai.chat.completions.create(requestBody);

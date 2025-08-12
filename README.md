@@ -8,13 +8,13 @@ AI-powered AWS analysis CLI tool that provides cost optimization, Lambda tuning,
 - **Lambda Optimization**: Performance analysis and tuning suggestions for Lambda functions
 - **Log Analysis**: CloudWatch logs analysis with natural language queries
 - **Terraform Review**: Security and best practices analysis for Terraform plans
-- **Token Tracking**: Complete OpenAI usage tracking with cost monitoring
+- **Token Tracking**: Complete OpenAI usage tracking with separate input/output/cached token costs
 - **Job History**: Detailed logs of all analysis jobs with unique IDs
 
 ## Installation
 
 ```bash
-git clone <repository>
+git clone https://github.com/your-repo/ai-cloud-doctor
 cd ai-cloud-doctor
 npm install
 npm run build
@@ -35,7 +35,14 @@ Or manually create `~/.ai-cloud-doctor-configs.json`:
 {
   "openaiKey": "sk-your-openai-key",
   "model": "gpt-5-nano",
+  "serviceTier": "flex",
   "maxTokens": 10000,
+  "inputTokenCost": 0.15,
+  "outputTokenCost": 0.6,
+  "cachedTokenCost": 0.075,
+  "reasoningEffort": "low",
+  "temperature": 1.0,
+  "verbosity": "low",
   "scanPeriod": 30,
   "region": "us-east-1",
   "awsCredentials": {
@@ -73,23 +80,21 @@ ai-cloud-doctor tf --tf-plan ./plan.json
 ai-cloud-doctor usage
 ```
 
-Shows detailed job history:
+Shows detailed job history with separate token costs:
 ```
-Job ID           Name              Model        Date        In     Out    Total   Cost
----------------- ----------------- ------------ ----------- ------ ------ ------- --------
-a1b2c3d4e5f6g7h8 cost-analysis     gpt-5-nano   1/15/2024     150     75     225  $0.0004
+Job ID   Name              Model        Date        In     Out    Cached Total   Cost
+-------- ----------------- ------------ ----------- ------ ------ ------ ------- --------
+a1b2c3d4 cost-analysis     gpt-5-nano   1/15/2024     150     75      0     225  $0.0004
 ```
 
 ## Output Format
 
-All AI analysis uses structured table format:
+All AI analysis uses structured sections:
 
-| Section | Details |
-|---------|---------|
-| 🔍 ANALYSIS | • Key findings and patterns |
-| 📊 TOP COSTS | • Highest cost services |
-| 💡 RECOMMENDATIONS | • Optimization suggestions |
-| ⚡ QUICK WINS | • Immediate actions |
+- 🔍 **ANALYSIS**: Key findings and patterns
+- 📊 **TOP COSTS**: Highest cost services
+- 💡 **RECOMMENDATIONS**: Optimization suggestions
+- ⚡ **QUICK WINS**: Immediate actions
 
 ## Files
 
@@ -112,3 +117,29 @@ All AI analysis uses structured table format:
 - AWS CLI configured (for live mode)
 - OpenAI API key
 - AWS credentials (for live analysis)
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## Changelog
+
+### v0.2.0
+- Added separate input/output/cached token cost tracking
+- Configurable OpenAI parameters (service tier, reasoning effort, temperature, verbosity)
+- Improved configure command flow
+- Enhanced cost calculation accuracy
+
+### v0.1.0
+- Initial release
+- Cost, Lambda, Logs, and Terraform analyzers
+- Basic token tracking
+- Job history logging
