@@ -10,7 +10,7 @@ export function generateJobId(): string {
   return randomBytes(8).toString('hex');
 }
 
-export async function logJob(jobName: string, inputTokens: number, outputTokens: number, cost?: number, model?: string): Promise<string> {
+export async function logJob(jobName: string, inputTokens: number, outputTokens: number, cost?: number, model?: string, cachedTokens?: number): Promise<string> {
   const jobId = generateJobId();
   
   const job: JobLog = {
@@ -19,8 +19,9 @@ export async function logJob(jobName: string, inputTokens: number, outputTokens:
     timestamp: new Date().toISOString(),
     inputTokens,
     outputTokens,
-    totalTokens: inputTokens + outputTokens,
-    cost: cost || calculateCost(inputTokens, outputTokens),
+    cachedTokens,
+    totalTokens: inputTokens + outputTokens + (cachedTokens || 0),
+    cost: cost || await calculateCost(inputTokens, outputTokens, cachedTokens),
     model
   };
   
@@ -34,11 +35,12 @@ export async function logJob(jobName: string, inputTokens: number, outputTokens:
   return jobId;
 }
 
-function calculateCost(inputTokens: number, outputTokens: number): number {
-  // GPT-3.5-turbo pricing: $0.0015/1K input, $0.002/1K output
-  const inputCost = (inputTokens / 1000) * 0.0015;
-  const outputCost = (outputTokens / 1000) * 0.002;
-  return inputCost + outputCost;
+async function calculateCost(inputTokens: number, outputTokens: number, cachedTokens: number = 0): Promise<number> {
+  const config = await import('../config.js').then(m => m.loadConfig());
+  const inputCost = (inputTokens / 1000000) * (config.inputTokenCost || 0.15);
+  const outputCost = (outputTokens / 1000000) * (config.outputTokenCost || 0.6);
+  const cachedCost = (cachedTokens / 1000000) * (config.cachedTokenCost || 0.075);
+  return inputCost + outputCost + cachedCost;
 }
 
 export async function getJobLogs(): Promise<JobLog[]> {

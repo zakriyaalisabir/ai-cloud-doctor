@@ -53,14 +53,14 @@ export async function analyzeLogs(cfg: AppConfig, opts: Record<string, any>, liv
   }
   
   const logsData = await getAwsLogsData(cfg, question);
-  const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
+  const openai = makeOpenAI(cfg);
   
   const response = await openai.ask(
     `Analyze this AWS logs data and provide insights:\n\n${logsData}\n\nReturn your response formatted ONLY in this exact structure for CLI display. \nFollow this markdown layout strictly:\n\n| Section | Details |\n|---------|---------|\n| 🔍 KEY PATTERNS | • Pattern 1 (LogGroup: description) <br> • Pattern 2 (LogGroup: description) |\n| 📈 ERROR TRENDS | • Trend 1 (LogGroup: description) <br> • Trend 2 (LogGroup: description) |\n| 💡 ACTIONABLE INSIGHTS | • Insight 1 (LogGroup: description) <br> • Insight 2 (LogGroup: description) |\n| ⚙️ RECOMMENDATIONS | • Rec 1 (LogGroup: description) <br> • Rec 2 (LogGroup: description) |\n\nRules:\n- Use ONLY the table above.\n- Replace the placeholder bullet points with specific findings.\n- Do not add extra text outside the table.\n- Keep total word count under 400 words.`,
     `Question: ${question}`
   );
   
-  const jobId = await logJob('logs-analysis', response.inputTokens, response.outputTokens, response.cost, response.model);
+  const jobId = await logJob('logs-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
   console.log(`\n📈 Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
   
   return `### Logs\n${logsData}\n\n${response.content}`;

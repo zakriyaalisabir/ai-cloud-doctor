@@ -52,13 +52,13 @@ export async function analyzeTf(cfg: AppConfig, opts: Record<string, any>): Prom
   
   // if openaiKey available, call AI for analysis
   if (cfg.openaiKey) {
-    const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
+    const openai = makeOpenAI(cfg);
     const response = await openai.ask(
       `Analyze this Terraform plan data and provide insights:\n\n${structuredData}\n\nReturn your response formatted ONLY in this exact structure for CLI display. \nFollow this markdown layout strictly:\n\n| Section | Details |\n|---------|---------|\n| ⚠️ RISK ASSESSMENT | • Risk 1 (Resource: description) <br> • Risk 2 (Resource: description) |\n| 📊 RESOURCE IMPACT | • Impact 1 (Resource: description) <br> • Impact 2 (Resource: description) |\n| 💡 RECOMMENDATIONS | • Rec 1 (Resource: description) <br> • Rec 2 (Resource: description) |\n| ⚙️ BEST PRACTICES | • Practice 1 (Resource: description) <br> • Practice 2 (Resource: description) |\n\nRules:\n- Use ONLY the table above.\n- Replace the placeholder bullet points with specific findings.\n- Do not add extra text outside the table.\n- Keep total word count under 400 words.`,
       "Analyze this Terraform plan for risks and recommendations"
     );
     
-    const jobId = await logJob('terraform-analysis', response.inputTokens, response.outputTokens, response.cost, response.model);
+    const jobId = await logJob('terraform-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
     console.log(`\n🛠️ Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
     
     return `### Terraform\n${structuredData}\n\n${response.content}`;

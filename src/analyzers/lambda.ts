@@ -30,7 +30,7 @@ export async function analyzeLambda(cfg: AppConfig, live: { live: boolean }, opt
   }
   
   const lambdaData = await getAwsLambdaData(cfg);
-  const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
+  const openai = makeOpenAI(cfg);
   const question = opts.question || "Analyze Lambda functions for performance optimization";
   
   const response = await openai.ask(
@@ -38,7 +38,7 @@ export async function analyzeLambda(cfg: AppConfig, live: { live: boolean }, opt
     question
   );
   
-  const jobId = await logJob('lambda-analysis', response.inputTokens, response.outputTokens, response.cost, response.model);
+  const jobId = await logJob('lambda-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
   console.log(`\n⚡ Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
   
   return `### Lambda\n${lambdaData}\n\n${response.content}`;

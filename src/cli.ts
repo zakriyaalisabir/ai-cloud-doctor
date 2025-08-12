@@ -65,7 +65,14 @@ async function configureCredentials() {
   
   const openaiKey = await ask(`OpenAI API Key [${existing.openaiKey ? chalk.green('***') : chalk.red('none')}]: `);
   const model = await ask(`OpenAI Model [${existing.model || 'gpt-5-nano'}]: `);
+  const serviceTier = await ask(`Service Tier [${existing.serviceTier || 'flex'}]: `);
   const maxTokens = await ask(`Max Tokens [${existing.maxTokens || '500'}]: `);
+  const inputTokenCost = await ask(`Input token cost per 1M [${existing.inputTokenCost || '0.15'}]: `);
+  const outputTokenCost = await ask(`Output token cost per 1M [${existing.outputTokenCost || '0.6'}]: `);
+  const cachedTokenCost = await ask(`Cached token cost per 1M [${existing.cachedTokenCost || '0.075'}]: `);
+  const reasoningEffort = await ask(`Reasoning Effort [${existing.reasoningEffort || 'low'}]: `);
+  const temperature = await ask(`Temperature [${existing.temperature || '1.0'}]: `);
+  const verbosity = await ask(`Verbosity [${existing.verbosity || 'low'}]: `);
   const scanPeriod = await ask(`Scan Period (No. of Days) [${existing.scanPeriod || '30'}]: `);
   const region = await ask(`AWS Region [${existing.region || 'us-east-1'}]: `);
   const accessKeyId = await ask(`AWS Access Key ID [${existing.awsCredentials?.accessKeyId ? chalk.green('***') : chalk.red('none')}]: `);
@@ -83,6 +90,13 @@ async function configureCredentials() {
     openaiKey: openaiKey || existing.openaiKey,
     model: model || existing.model,
     maxTokens: maxTokens ? parseInt(maxTokens) : existing.maxTokens,
+    inputTokenCost: inputTokenCost ? parseFloat(inputTokenCost) : existing.inputTokenCost || 0.15,
+    outputTokenCost: outputTokenCost ? parseFloat(outputTokenCost) : existing.outputTokenCost || 0.6,
+    cachedTokenCost: cachedTokenCost ? parseFloat(cachedTokenCost) : existing.cachedTokenCost || 0.075,
+    serviceTier: serviceTier || existing.serviceTier || 'auto',
+    reasoningEffort: reasoningEffort || existing.reasoningEffort || 'medium',
+    temperature: temperature ? parseFloat(temperature) : existing.temperature || 0.7,
+    verbosity: verbosity || existing.verbosity || 'standard',
     scanPeriod: validateScanPeriod(scanPeriod),
     region: region || existing.region || "us-east-1",
     awsCredentials: (accessKeyId || existing.awsCredentials?.accessKeyId) && (secretAccessKey || existing.awsCredentials?.secretAccessKey) ? {
@@ -127,6 +141,7 @@ program
       'Date': new Date(job.timestamp).toLocaleDateString(),
       'In': job.inputTokens,
       'Out': job.outputTokens,
+      'Cached': job.cachedTokens || 0,
       'Total': job.totalTokens,
       'Cost': job.cost ? `$${job.cost.toFixed(4)}` : 'N/A'
     })));

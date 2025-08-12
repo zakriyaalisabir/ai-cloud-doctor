@@ -8,6 +8,7 @@ export interface JobLog {
   timestamp: string;
   inputTokens: number;
   outputTokens: number;
+  cachedTokens?: number;
   totalTokens: number;
   cost?: number;
   model?: string;
@@ -35,6 +36,20 @@ export interface AppConfig {
   };
   /** Analysis mode derived from CLI (--mode) */
   offline?: boolean;
+  /** Cost per 1 million input tokens */
+  inputTokenCost?: number;
+  /** Cost per 1 million output tokens */
+  outputTokenCost?: number;
+  /** Cost per 1 million cached tokens */
+  cachedTokenCost?: number;
+  /** OpenAI service tier */
+  serviceTier?: string;
+  /** OpenAI reasoning effort */
+  reasoningEffort?: string;
+  /** OpenAI temperature */
+  temperature?: number;
+  /** OpenAI verbosity */
+  verbosity?: string;
 }
 
 /** Path to the persistent configuration file.  Credentials and other settings

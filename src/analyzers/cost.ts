@@ -44,7 +44,7 @@ export async function analyzeCost(cfg: AppConfig, live: { live: boolean }, opts:
   }
   
   const costData = await getAwsCostData(cfg);
-  const openai = makeOpenAI(cfg.openaiKey, cfg.model, cfg.maxTokens);
+  const openai = makeOpenAI(cfg);
   const question = opts.question || "Analyze this AWS cost data and suggest specific savings opportunities";
   
   const response = await openai.ask(
@@ -52,7 +52,7 @@ export async function analyzeCost(cfg: AppConfig, live: { live: boolean }, opts:
     question
   );
   
-  const jobId = await logJob('cost-analysis', response.inputTokens, response.outputTokens, response.cost, response.model);
+  const jobId = await logJob('cost-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
   console.log(`\n📊 Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
   
   return `### Cost\n${costData}\n\n${response.content}`;
