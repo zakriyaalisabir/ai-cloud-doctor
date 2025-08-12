@@ -1,6 +1,6 @@
 {
   "name": "ai-cloud-doctor",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AI powered AWS sanity checks for cost, Terraform diffs, Lambda tuning, and logs, using local stubs (no external dependencies).",
   "bin": {
     "ai-cloud-doctor": "./dist/src/cli.js"
