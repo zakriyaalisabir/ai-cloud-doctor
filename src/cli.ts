@@ -11,6 +11,13 @@ import { analyzeLogs } from "./analyzers/logs.js";
 import { formatCostAnalysis, formatLambdaAnalysis, formatLogsAnalysis } from "./utils/formatter.js";
 import { formatMultipleTables } from "./utils/tableFormatter.js";
 import { getJobLogs } from "./utils/jobTracker.js";
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packagePath = __dirname.includes('dist') ? path.join(__dirname, '../../package.json') : path.join(__dirname, '../package.json');
+const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 
 const program = new Command();
 
@@ -284,6 +291,6 @@ program
 program
   .name('ai-cloud-doctor')
   .description('AI powered AWS sanity checks for cost, Terraform diffs, Lambda tuning, and logs')
-  .version(require('../package.json').version);
+  .version(pkg.version);
 
 program.parse();
