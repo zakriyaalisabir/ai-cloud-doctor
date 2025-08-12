@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-01-10
+
+### Added
+- Improved analysis output formatting with clean section display
+- Enhanced lambda analyzer with better table parsing
+- Colored token usage summary in usage command
+- Better error handling and user feedback
+
+### Changed
+- Lambda analysis results now display in readable format instead of raw markdown
+- Usage command shows colored totals for better visibility
+- Improved configure command flow and parameter ordering
+
+### Fixed
+- Lambda analyzer table parsing for better readability
+- Console output formatting across all analyzers
+
 ## [0.2.0] - 2025-01-10
 
 ### Added

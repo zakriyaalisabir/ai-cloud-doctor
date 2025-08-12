@@ -27,21 +27,21 @@ const log = {
 async function setupAwsProfile(config: any) {
   const { execSync } = await import("node:child_process");
   const profileName = "ai-cloud-doctor";
-  
+
   try {
     log.info(`Setting up AWS CLI profile '${profileName}'...`);
-    
+
     execSync(`aws configure set aws_access_key_id ${config.awsCredentials.accessKeyId} --profile ${profileName}`);
     execSync(`aws configure set aws_secret_access_key ${config.awsCredentials.secretAccessKey} --profile ${profileName}`);
     execSync(`aws configure set region ${config.region} --profile ${profileName}`);
-    
+
     if (config.awsCredentials.sessionToken) {
       execSync(`aws configure set aws_session_token ${config.awsCredentials.sessionToken} --profile ${profileName}`);
     }
-    
+
     log.success(`AWS CLI profile '${profileName}' created successfully.`);
     log.dim(`To use this profile: export AWS_PROFILE=${profileName}`);
-    
+
   } catch (error) {
     log.error(`Failed to setup AWS profile: ${error instanceof Error ? error.message : String(error)}`);
     log.warn('Manual setup - add these to your environment:');
@@ -59,10 +59,10 @@ async function configureCredentials() {
   const readline = await import("node:readline");
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (q: string): Promise<string> => new Promise(r => rl.question(q, r));
-  
+
   log.header('🔧 Configure ai-cloud-doctor credentials');
   log.dim('Press Enter to keep existing values\n');
-  
+
   const openaiKey = await ask(`OpenAI API Key [${existing.openaiKey ? chalk.green('***') : chalk.red('none')}]: `);
   const model = await ask(`OpenAI Model [${existing.model || 'gpt-5-nano'}]: `);
   const serviceTier = await ask(`Service Tier [${existing.serviceTier || 'flex'}]: `);
@@ -80,7 +80,7 @@ async function configureCredentials() {
   const sessionToken = await ask(`AWS Session Token [${existing.awsCredentials?.sessionToken ? chalk.green('***') : chalk.red('none')}]: `);
   const setupProfile = await ask(`Setup AWS CLI profile? (y/n) [n]: `);
   rl.close();
-  
+
   const validateScanPeriod = (period: string | number | undefined): number => {
     const p = typeof period === 'string' ? parseInt(period) : period;
     return [1, 7, 30, 120, 365].includes(p || 0) ? p! : existing.scanPeriod || 30;
@@ -105,10 +105,10 @@ async function configureCredentials() {
       sessionToken: sessionToken || existing.awsCredentials?.sessionToken
     } : undefined
   };
-  
+
   await saveConfig(finalConfig);
   log.success('Configuration saved to ~/.ai-cloud-doctor-configs.json');
-  
+
   if (setupProfile?.toLowerCase() === 'y' && finalConfig.awsCredentials) {
     await setupAwsProfile(finalConfig);
   }
@@ -126,12 +126,12 @@ program
   .description('Show OpenAI token usage and job history')
   .action(async () => {
     const jobs = await getJobLogs();
-    
+
     if (jobs.length === 0) {
       log.info('No jobs found');
       return;
     }
-    
+
     log.header('📊 OpenAI Usage History');
     console.log('');
     console.table(jobs.map(job => ({
@@ -145,11 +145,11 @@ program
       'Total': job.totalTokens,
       'Cost': job.cost ? `$${job.cost.toFixed(4)}` : 'N/A'
     })));
-    
+
     const totalIn = jobs.reduce((sum, job) => sum + job.inputTokens, 0);
     const totalOut = jobs.reduce((sum, job) => sum + job.outputTokens, 0);
     const totalCost = jobs.reduce((sum, job) => sum + (job.cost || 0), 0);
-    
+
     console.log(`\n${chalk.bold('TOTAL:')} ${chalk.cyan(totalIn + totalOut)} tokens (${chalk.green(totalIn)} in, ${chalk.yellow(totalOut)} out) - ${chalk.red('$' + totalCost.toFixed(4))}`);
   });
 
@@ -162,31 +162,31 @@ program
   .option('--scanPeriod <days>', 'Analysis period in days (1|7|30|120|365)')
   .action(async (options) => {
     log.header('🔍 Running comprehensive AWS analysis...');
-    
+
     const spinner = ora('Loading configuration...').start();
     const cfg = await loadConfig(options);
     const live = await ensureAwsLive(cfg, options);
-    
+
     spinner.succeed(`Mode: ${live.live ? 'live' : 'offline'} | Scan period: ${cfg.scanPeriod || 30} days`);
-    
+
     const parts: string[] = [];
-    
+
     const tfSpinner = ora('Analyzing Terraform plans...').start();
     parts.push(await analyzeTf(cfg, options));
     tfSpinner.succeed('Terraform analysis complete');
-    
+
     const costSpinner = ora('Analyzing AWS costs...').start();
     parts.push(await analyzeCost(cfg, live, options));
     costSpinner.succeed('Cost analysis complete');
-    
+
     const lambdaSpinner = ora('Analyzing Lambda functions...').start();
     parts.push(await analyzeLambda(cfg, live, options));
     lambdaSpinner.succeed('Lambda analysis complete');
-    
+
     const logsSpinner = ora('Analyzing CloudWatch logs...').start();
     parts.push(await analyzeLogs(cfg, options, live));
     logsSpinner.succeed('Logs analysis complete');
-    
+
     console.log('\n' + parts.filter(Boolean).join('\n\n---\n\n'));
   });
 
@@ -200,15 +200,15 @@ program
   .option('--question <text>', 'Custom cost analysis question')
   .action(async (options) => {
     log.header('💰 Analyzing AWS costs...');
-    
+
     const spinner = ora('Loading configuration...').start();
     const cfg = await loadConfig(options);
     const live = await ensureAwsLive(cfg, options);
-    
+
     spinner.text = 'Fetching AWS cost data...';
     const result = await analyzeCost(cfg, live, options);
     spinner.succeed('Cost analysis complete');
-    
+
     console.log(formatCostAnalysis(result));
   });
 
@@ -222,15 +222,15 @@ program
   .option('--question <text>', 'Custom Lambda analysis question')
   .action(async (options) => {
     log.header('⚡ Analyzing Lambda functions...');
-    
+
     const spinner = ora('Loading configuration...').start();
     const cfg = await loadConfig(options);
     const live = await ensureAwsLive(cfg, options);
-    
+
     spinner.text = 'Fetching Lambda data and metrics...';
     const result = await analyzeLambda(cfg, live, options);
     spinner.succeed('Lambda analysis complete');
-    
+
     console.log(formatLambdaAnalysis(result));
   });
 
@@ -241,21 +241,21 @@ program
   .option('--tf-plan <file>', 'Path to terraform plan JSON file')
   .action(async (options) => {
     log.header('🏗️  Analyzing Terraform plan...');
-    
+
     const cfg = await loadConfig(options);
     const result = await analyzeTf(cfg, options);
-    
+
     // Format Terraform output
     const content = result.replace(/^### Terraform\n/, '');
     const parts = content.split('\n\n');
     const tableData = parts[0];
     const aiAnalysis = parts.slice(1).join('\n\n');
-    
+
     let formatted = formatMultipleTables(tableData);
     if (aiAnalysis) {
       formatted += '\n' + chalk.white(aiAnalysis);
     }
-    
+
     console.log(formatted);
   });
 
@@ -269,21 +269,21 @@ program
   .option('--question <text>', 'Natural language question to convert to logs query')
   .action(async (options) => {
     log.header('📋 Analyzing CloudWatch logs...');
-    
+
     const spinner = ora('Loading configuration...').start();
     const cfg = await loadConfig(options);
     const live = await ensureAwsLive(cfg, options);
-    
+
     spinner.text = 'Fetching log groups and building queries...';
     const result = await analyzeLogs(cfg, options, live);
     spinner.succeed('Logs analysis complete');
-    
+
     console.log(formatLogsAnalysis(result));
   });
 
 program
   .name('ai-cloud-doctor')
   .description('AI powered AWS sanity checks for cost, Terraform diffs, Lambda tuning, and logs')
-  .version('0.1.0');
+  .version(require('../package.json').version);
 
 program.parse();

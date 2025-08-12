@@ -33,9 +33,9 @@ export function makeOpenAI(config: any): { ask: (system: string, user: string) =
         n: 1, // Number of completions results to generate
       };
 
-      if (!`${config.model}`.startsWith('gpt-5')) {
+      if (!`${config.model}`.includes('gpt-5')) {
         // max_token is not supported for GPT-5 models, use max_completion_tokens instead
-        requestBody.max_tokens = requestBody.max_completion_tokens || 0; // GPT-5 models have a higher limit
+        requestBody.max_tokens = requestBody.max_completion_tokens || 0;
       }
 
       try {
