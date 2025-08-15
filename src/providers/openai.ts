@@ -40,7 +40,10 @@ export function makeOpenAI(config: any): { ask: (system: string, user: string) =
           return {
             content: "OpenAI returned no choices",
             inputTokens: 0,
-            outputTokens: 0
+            outputTokens: 0,
+            cachedTokens: 0,
+            cost: 0,
+            model: "N/A"
           };
         }
 
@@ -49,7 +52,10 @@ export function makeOpenAI(config: any): { ask: (system: string, user: string) =
           return {
             content: `OpenAI returned empty content. Response: ${JSON.stringify(completion.choices[0])}`,
             inputTokens: 0,
-            outputTokens: 0
+            outputTokens: 0,
+            cachedTokens: 0,
+            cost: 0,
+            model: "N/A"
           };
         }
 
@@ -65,7 +71,10 @@ export function makeOpenAI(config: any): { ask: (system: string, user: string) =
         return {
           content: `OpenAI API error: ${error instanceof Error ? error.message : String(error)}`,
           inputTokens: 0,
-          outputTokens: 0
+          outputTokens: 0,
+          cachedTokens: 0,
+          cost: 0,
+          model: "N/A"
         };
       }
     },

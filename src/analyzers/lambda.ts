@@ -49,7 +49,7 @@ export async function analyzeLambda(cfg: AppConfig, live: { live: boolean }, opt
   );
 
   const jobId = await logJob('lambda-analysis', response.inputTokens, response.outputTokens, response.cost, response.model, response.cachedTokens);
-  console.log(`\n⚡ Tokens: ${response.inputTokens} in, ${response.outputTokens} out | Job: ${jobId}`);
+  console.log(`\n⚡ Tokens: ${response.inputTokens} in, ${response.outputTokens} out, ${response.cachedTokens} cached | Job: ${jobId}`);
 
   // Parse and display with improved formatting
   const lines = response.content.split('\n');

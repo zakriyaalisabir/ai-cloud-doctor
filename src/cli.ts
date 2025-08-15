@@ -236,6 +236,7 @@ program
   .command('tf')
   .description('Run terraform plan analyzer')
   .option('--tf-plan <file>', 'Path to terraform plan JSON file')
+  .option('--question <text>', 'Custom Terraform analysis question')
   .action(async (options) => {
     log.header('🏗️  Analyzing Terraform plan...');
 

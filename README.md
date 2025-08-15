@@ -72,15 +72,24 @@ ai-cloud-doctor scan --mode auto
 ```bash
 # Cost analysis
 ai-cloud-doctor cost --scanPeriod 7
+ai-cloud-doctor cost --question "Which services cost the most?"
+ai-cloud-doctor cost --region us-west-2 --scanPeriod 30
 
 # Lambda optimization
 ai-cloud-doctor lambda --question "Find timeout issues"
+ai-cloud-doctor lambda --question "Which functions have high memory usage?"
+ai-cloud-doctor lambda --scanPeriod 7 --question "Show cold start problems"
 
 # Log analysis
 ai-cloud-doctor logs --question "Show error patterns"
+ai-cloud-doctor logs --question "Find API Gateway 5xx errors"
+ai-cloud-doctor logs --question "Show database connection issues"
 
 # Terraform review
 ai-cloud-doctor tf --tf-plan ./plan.json
+ai-cloud-doctor tf --tf-plan ./plan.json --question "Focus on security risks"
+ai-cloud-doctor tf --tf-plan ./plan.json --question "Check IAM permissions"
+ai-cloud-doctor tf --tf-plan ./plan.json --question "Validate network security"
 ```
 
 ### Token Usage Tracking

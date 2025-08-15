@@ -86,8 +86,8 @@ function formatLambdaData(data: any): string {
     for (const func of data.Functions.slice(0, 15)) {
       const name = func.FunctionName.length > 27 ? func.FunctionName.substring(0, 27) + '...' : func.FunctionName;
       const arch = func.Architectures ? func.Architectures[0] : 'x86_64';
-      const created = new Date(func.LastModified).toISOString().split('T')[0];
-      const modified = new Date(func.LastModified).toISOString().split('T')[0];
+      const created = func.LastModified ? new Date(func.LastModified).toISOString().split('T')[0] : 'N/A';
+      const modified = func.LastModified ? new Date(func.LastModified).toISOString().split('T')[0] : 'N/A';
 
       let runtimeColor = chalk.white;
       if (func.Runtime.includes('python')) runtimeColor = chalk.green;
