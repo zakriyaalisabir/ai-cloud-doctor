@@ -1,6 +1,3 @@
-# Created by https://www.toptal.com/developers/gitignore/api/node,terraform
-# Edit at https://www.toptal.com/developers/gitignore?templates=node,terraform
-
 ### Node ###
 # Logs
 logs
@@ -177,4 +174,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# End of https://www.toptal.com/developers/gitignore/api/node,terraform
+# Other files
+*.tfignore
+**/.DS_Store

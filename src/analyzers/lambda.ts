@@ -22,7 +22,9 @@ async function getAwsLambdaData(cfg: AppConfig): Promise<string> {
       Runtime: fn.Runtime,
       MemorySize: fn.MemorySize,
       Timeout: fn.Timeout,
-      CodeSize: fn.CodeSize
+      CodeSize: fn.CodeSize,
+      LastModified: fn.LastModified,
+      Architectures: fn.Architectures || []
     }));
 
     return JSON.stringify({ Functions: limitedFunctions, Metrics: metricsData }, null, 2);

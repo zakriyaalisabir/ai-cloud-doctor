@@ -4,12 +4,12 @@ export function formatJsonData(jsonData: string, title?: string): string {
   try {
     const data = JSON.parse(jsonData);
     let formatted = '';
-
+    
     if (title) {
       formatted += chalk.bold.cyan(`\n📊 ${title}\n`);
       formatted += chalk.dim('─'.repeat(Math.min(80, title.length + 10))) + '\n';
     }
-
+    
     // Handle different AWS service data structures
     if (data.ResultsByTime) {
       // Cost Explorer data
@@ -23,6 +23,15 @@ export function formatJsonData(jsonData: string, title?: string): string {
     } else if (data.ResourceChanges) {
       // Terraform plan data
       return formatTerraformData(data);
+    } else if (data.users || data.roles || data.groups) {
+      // IAM data
+      return formatIamData(data);
+    } else if (data.findings) {
+      // Security Hub data
+      return formatSecurityHubData(data);
+    } else if (data.checks) {
+      // Trusted Advisor data
+      return formatTrustedAdvisorData(data);
     } else {
       // Generic JSON formatting
       return formatGenericJson(data);
@@ -35,137 +44,134 @@ export function formatJsonData(jsonData: string, title?: string): string {
 function formatCostExplorerData(data: any): string {
   let formatted = chalk.bold.cyan('\n💰 AWS Cost Analysis\n');
   formatted += chalk.dim('─'.repeat(50)) + '\n';
-
+  
   if (data.ResultsByTime && data.ResultsByTime.length > 0) {
     for (const result of data.ResultsByTime) {
       const period = `${result.TimePeriod.Start} to ${result.TimePeriod.End}`;
       formatted += chalk.bold.white(`\n📅 Period: ${period}\n`);
-
+      
       if (result.Groups && result.Groups.length > 0) {
         formatted += chalk.bold.white('Service'.padEnd(40)) + chalk.bold.white('Cost (USD)') + '\n';
         formatted += chalk.dim('─'.repeat(60)) + '\n';
-
+        
         // Sort by cost descending
-        const sortedGroups = result.Groups.sort((a: any, b: any) =>
+        const sortedGroups = result.Groups.sort((a: any, b: any) => 
           parseFloat(b.Metrics.BlendedCost.Amount) - parseFloat(a.Metrics.BlendedCost.Amount)
         );
-
+        
         for (const group of sortedGroups.slice(0, 20)) {
           const service = group.Keys[0];
           const amount = parseFloat(group.Metrics.BlendedCost.Amount);
-
+          
           let serviceColor = chalk.white;
           if (service.includes('EC2')) serviceColor = chalk.yellow;
           else if (service.includes('VPC')) serviceColor = chalk.blue;
           else if (service.includes('Lambda')) serviceColor = chalk.green;
-
-          formatted += serviceColor(service.padEnd(40)) +
-            chalk.cyan(`$${amount.toFixed(2)}`) + '\n';
+          
+          formatted += serviceColor(service.padEnd(40)) + 
+                      chalk.cyan(`$${amount.toFixed(2)}`) + '\n';
         }
       }
     }
   }
-
+  
   return formatted;
 }
 
 function formatLambdaData(data: any): string {
   let formatted = chalk.bold.yellow('\n⚡ Lambda Functions\n');
   formatted += chalk.dim('─'.repeat(120)) + '\n';
-
+  
   if (data.Functions && data.Functions.length > 0) {
-    formatted += chalk.bold.white('Function Name'.padEnd(30)) +
-      chalk.bold.white('Runtime'.padEnd(12)) +
-      chalk.bold.white('Mem'.padEnd(6)) +
-      chalk.bold.white('Timeout'.padEnd(8)) +
-      chalk.bold.white('Arch'.padEnd(8)) +
-      chalk.bold.white('Created'.padEnd(12)) +
-      chalk.bold.white('Modified') + '\n';
+    formatted += chalk.bold.white('Function Name'.padEnd(30)) + 
+                chalk.bold.white('Runtime'.padEnd(12)) + 
+                chalk.bold.white('Mem'.padEnd(6)) + 
+                chalk.bold.white('Timeout'.padEnd(8)) + 
+                chalk.bold.white('Arch'.padEnd(8)) + 
+                chalk.bold.white('Modified') + '\n';
     formatted += chalk.dim('─'.repeat(120)) + '\n';
-
+    
     for (const func of data.Functions.slice(0, 15)) {
       const name = func.FunctionName.length > 27 ? func.FunctionName.substring(0, 27) + '...' : func.FunctionName;
       const arch = func.Architectures ? func.Architectures[0] : 'x86_64';
-      const created = func.LastModified ? new Date(func.LastModified).toISOString().split('T')[0] : 'N/A';
       const modified = func.LastModified ? new Date(func.LastModified).toISOString().split('T')[0] : 'N/A';
-
+      
       let runtimeColor = chalk.white;
       if (func.Runtime.includes('python')) runtimeColor = chalk.green;
       else if (func.Runtime.includes('node')) runtimeColor = chalk.yellow;
-
+      
       let archColor = chalk.white;
       if (arch === 'arm64') archColor = chalk.green;
       else archColor = chalk.yellow;
-
-      formatted += chalk.cyan(name.padEnd(30)) +
-        runtimeColor(func.Runtime.padEnd(12)) +
-        chalk.white(func.MemorySize.toString().padEnd(6)) +
-        chalk.white(func.Timeout.toString().padEnd(8)) +
-        archColor(arch.padEnd(8)) +
-        chalk.dim(created.padEnd(12)) +
-        chalk.dim(modified) + '\n';
+      
+      formatted += chalk.cyan(name.padEnd(30)) + 
+                  runtimeColor(func.Runtime.padEnd(12)) + 
+                  chalk.white(func.MemorySize.toString().padEnd(6)) + 
+                  chalk.white(func.Timeout.toString().padEnd(8)) + 
+                  archColor(arch.padEnd(8)) + 
+                  chalk.dim(modified) + '\n';
     }
   }
-
+  
   if (data.Metrics && data.Metrics.MetricDataResults) {
     formatted += chalk.bold.yellow('\n📊 Metrics Summary\n');
     formatted += chalk.dim('─'.repeat(30)) + '\n';
-
+    
     for (const metric of data.Metrics.MetricDataResults) {
-      formatted += chalk.white(`${metric.Label}: `) +
-        chalk.cyan(`${metric.Values.length} data points`) + '\n';
+      formatted += chalk.white(`${metric.Label}: `) + 
+                  chalk.cyan(`${metric.Values.length} data points`) + '\n';
     }
   }
-
+  
   return formatted;
 }
 
 function formatLogsData(data: any): string {
   let formatted = chalk.bold.blue('\n📋 CloudWatch Log Groups\n');
   formatted += chalk.dim('─'.repeat(50)) + '\n';
-
+  
   if (data.LogGroups && data.LogGroups.length > 0) {
-    formatted += chalk.bold.white('Log Group'.padEnd(50)) +
-      chalk.bold.white('Size (bytes)'.padEnd(15)) +
-      chalk.bold.white('Retention') + '\n';
+    formatted += chalk.bold.white('Log Group'.padEnd(50)) + 
+                chalk.bold.white('Size (bytes)'.padEnd(15)) + 
+                chalk.bold.white('Retention') + '\n';
     formatted += chalk.dim('─'.repeat(80)) + '\n';
-
+    
     for (const group of data.LogGroups) {
       const name = group.logGroupName.length > 47 ? group.logGroupName.substring(0, 47) + '...' : group.logGroupName;
       const size = group.storedBytes || 0;
       const retention = group.retentionInDays || 'Never expires';
-
+      
       let sizeColor = chalk.white;
       if (size > 50000000) sizeColor = chalk.red; // > 50MB
       else if (size > 10000000) sizeColor = chalk.yellow; // > 10MB
       else if (size > 0) sizeColor = chalk.green;
       else sizeColor = chalk.dim;
-
-      formatted += chalk.cyan(name.padEnd(50)) +
-        sizeColor(size.toLocaleString().padEnd(15)) +
-        chalk.white(retention.toString()) + '\n';
+      
+      formatted += chalk.cyan(name.padEnd(50)) + 
+                  sizeColor(size.toLocaleString().padEnd(15)) + 
+                  chalk.white(retention.toString()) + '\n';
     }
   }
-
+  
   if (data.Query) {
     formatted += chalk.bold.blue('\n🔍 Suggested Query\n');
     formatted += chalk.dim('─'.repeat(30)) + '\n';
     formatted += chalk.cyan(data.Query) + '\n';
   }
-
+  
   return formatted;
 }
 
 function formatTerraformData(data: any): string {
   let formatted = chalk.bold.magenta('\n🏠 Terraform Plan Analysis\n');
   formatted += chalk.dim('─'.repeat(60)) + '\n';
-
+  
   // Summary section
   if (data.Summary) {
     formatted += chalk.bold.white('\n📊 Plan Summary\n');
     formatted += chalk.dim('─'.repeat(30)) + '\n';
     formatted += chalk.white(`Total Changes: `) + chalk.cyan(data.Summary.TotalChanges.toString()) + '\n';
-
+    
     if (data.Summary.Actions) {
       formatted += chalk.white('\nActions:\n');
       Object.entries(data.Summary.Actions).forEach(([action, count]: [string, any]) => {
@@ -173,43 +179,147 @@ function formatTerraformData(data: any): string {
         if (action === 'create') actionColor = chalk.green;
         else if (action === 'destroy') actionColor = chalk.red;
         else if (action === 'update') actionColor = chalk.yellow;
-
+        
         formatted += actionColor(`  ${action}: `) + chalk.cyan(count.toString()) + '\n';
       });
     }
   }
-
+  
   // Resource changes table
   if (data.ResourceChanges && data.ResourceChanges.length > 0) {
     formatted += chalk.bold.white('\n📋 Resource Changes\n');
     formatted += chalk.dim('─'.repeat(80)) + '\n';
-
-    formatted += chalk.bold.white('Resource'.padEnd(35)) +
-      chalk.bold.white('Type'.padEnd(20)) +
-      chalk.bold.white('Action'.padEnd(15)) +
-      chalk.bold.white('Provider') + '\n';
+    
+    formatted += chalk.bold.white('Resource'.padEnd(35)) + 
+                chalk.bold.white('Type'.padEnd(20)) + 
+                chalk.bold.white('Action'.padEnd(15)) + 
+                chalk.bold.white('Provider') + '\n';
     formatted += chalk.dim('─'.repeat(80)) + '\n';
-
+    
     for (const change of data.ResourceChanges.slice(0, 20)) {
       const address = change.Address.length > 32 ? change.Address.substring(0, 32) + '...' : change.Address;
       const type = change.Type.length > 17 ? change.Type.substring(0, 17) + '...' : change.Type;
-
+      
       let actionColor = chalk.white;
       if (change.Action.includes('create')) actionColor = chalk.green;
       else if (change.Action.includes('destroy')) actionColor = chalk.red;
       else if (change.Action.includes('update')) actionColor = chalk.yellow;
-
-      formatted += chalk.cyan(address.padEnd(35)) +
-        chalk.white(type.padEnd(20)) +
-        actionColor(change.Action.padEnd(15)) +
-        chalk.dim(change.Provider) + '\n';
+      
+      formatted += chalk.cyan(address.padEnd(35)) + 
+                  chalk.white(type.padEnd(20)) + 
+                  actionColor(change.Action.padEnd(15)) + 
+                  chalk.dim(change.Provider) + '\n';
     }
-
+    
     if (data.ResourceChanges.length > 20) {
       formatted += chalk.dim(`\n... and ${data.ResourceChanges.length - 20} more changes\n`);
     }
   }
+  
+  return formatted;
+}
 
+function formatIamData(data: any): string {
+  let formatted = chalk.bold.cyan('\n🔑 IAM Analysis\n');
+  formatted += chalk.dim('─'.repeat(50)) + '\n';
+  
+  if (data.users && data.users.length > 0) {
+    formatted += chalk.bold.white('\n👥 Users\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    
+    for (const user of data.users.slice(0, 10)) {
+      const lastUsed = user.PasswordLastUsed ? new Date(user.PasswordLastUsed).toLocaleDateString() : 'Never';
+      formatted += chalk.cyan(`  ${user.UserName}: `) + chalk.white(`Created ${new Date(user.CreateDate).toLocaleDateString()}, Last used ${lastUsed}`) + '\n';
+    }
+  }
+  
+  if (data.roles && data.roles.length > 0) {
+    formatted += chalk.bold.white('\n🎭 Roles\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    
+    for (const role of data.roles.slice(0, 10)) {
+      formatted += chalk.cyan(`  ${role.RoleName}: `) + chalk.white(`Created ${new Date(role.CreateDate).toLocaleDateString()}`) + '\n';
+    }
+  }
+  
+  if (data.groups && data.groups.length > 0) {
+    formatted += chalk.bold.white('\n👥 Groups\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    
+    for (const group of data.groups) {
+      formatted += chalk.cyan(`  ${group.GroupName}: `) + chalk.white(`Created ${new Date(group.CreateDate).toLocaleDateString()}`) + '\n';
+    }
+  }
+  
+  if (data.policies && data.policies.length > 0) {
+    formatted += chalk.bold.white('\n📋 Custom Policies\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    
+    for (const policy of data.policies.slice(0, 10)) {
+      formatted += chalk.cyan(`  ${policy.PolicyName}: `) + chalk.white(`${policy.AttachmentCount} attachments`) + '\n';
+    }
+  }
+  
+  return formatted;
+}
+
+function formatSecurityHubData(data: any): string {
+  let formatted = chalk.bold.red('\n🔒 Security Hub Findings\n');
+  formatted += chalk.dim('─'.repeat(50)) + '\n';
+  
+  if (data.findings && data.findings.length > 0) {
+    const severityCounts = data.findings.reduce((acc: any, finding: any) => {
+      acc[finding.Severity] = (acc[finding.Severity] || 0) + 1;
+      return acc;
+    }, {});
+    
+    formatted += chalk.bold.white('\n📊 Findings by Severity\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    
+    Object.entries(severityCounts).forEach(([severity, count]: [string, any]) => {
+      const color = severity === 'CRITICAL' ? chalk.red : severity === 'HIGH' ? chalk.yellow : chalk.white;
+      formatted += color(`  ${severity}: `) + chalk.cyan(count.toString()) + '\n';
+    });
+    
+    formatted += chalk.bold.white('\n🚨 Top Findings\n');
+    formatted += chalk.dim('─'.repeat(50)) + '\n';
+    
+    for (const finding of data.findings.slice(0, 5)) {
+      const severityColor = finding.Severity === 'CRITICAL' ? chalk.red : finding.Severity === 'HIGH' ? chalk.yellow : chalk.white;
+      formatted += severityColor(`  [${finding.Severity}] `) + chalk.white(finding.Title) + '\n';
+    }
+  }
+  
+  return formatted;
+}
+
+function formatTrustedAdvisorData(data: any): string {
+  let formatted = chalk.bold.green('\n🛡️ Trusted Advisor Checks\n');
+  formatted += chalk.dim('─'.repeat(50)) + '\n';
+  
+  if (data.checks && data.checks.length > 0) {
+    const statusCounts = data.checks.reduce((acc: any, check: any) => {
+      acc[check.status] = (acc[check.status] || 0) + 1;
+      return acc;
+    }, {});
+    
+    formatted += chalk.bold.white('\n📊 Check Status Summary\n');
+    formatted += chalk.dim('─'.repeat(30)) + '\n';
+    
+    Object.entries(statusCounts).forEach(([status, count]: [string, any]) => {
+      const color = status === 'error' ? chalk.red : status === 'warning' ? chalk.yellow : chalk.green;
+      formatted += color(`  ${status}: `) + chalk.cyan(count.toString()) + '\n';
+    });
+    
+    formatted += chalk.bold.white('\n🔍 Check Results\n');
+    formatted += chalk.dim('─'.repeat(50)) + '\n';
+    
+    for (const check of data.checks) {
+      const statusColor = check.status === 'error' ? chalk.red : check.status === 'warning' ? chalk.yellow : chalk.green;
+      formatted += statusColor(`  [${check.status}] `) + chalk.white(`${check.name} (${check.category})`) + '\n';
+    }
+  }
+  
   return formatted;
 }
 

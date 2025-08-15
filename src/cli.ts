@@ -8,6 +8,9 @@ import { analyzeCost } from "./analyzers/cost.js";
 import { analyzeTf } from "./analyzers/tf.js";
 import { analyzeLambda } from "./analyzers/lambda.js";
 import { analyzeLogs } from "./analyzers/logs.js";
+import { analyzeTrustedAdvisor } from "./analyzers/trustedadvisor.js";
+import { analyzeSecurityHub } from "./analyzers/securityhub.js";
+import { analyzeIam } from "./analyzers/iam.js";
 import { getJobLogs } from "./utils/jobTracker.js";
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -189,6 +192,18 @@ program
     const logsSpinner = ora('Analyzing CloudWatch logs...').start();
     await analyzeLogs(cfg, options, live);
     logsSpinner.succeed('Logs analysis complete');
+
+    const advisorSpinner = ora('Analyzing Trusted Advisor...').start();
+    await analyzeTrustedAdvisor(cfg, live, options);
+    advisorSpinner.succeed('Trusted Advisor analysis complete');
+
+    const securitySpinner = ora('Analyzing Security Hub...').start();
+    await analyzeSecurityHub(cfg, live, options);
+    securitySpinner.succeed('Security Hub analysis complete');
+
+    const iamSpinner = ora('Analyzing IAM permissions...').start();
+    await analyzeIam(cfg, live, options);
+    iamSpinner.succeed('IAM analysis complete');
   });
 
 // Cost command
@@ -266,6 +281,63 @@ program
     spinner.text = 'Fetching log groups and building queries...';
     await analyzeLogs(cfg, options, live);
     spinner.succeed('Logs analysis complete');
+  });
+
+// Trusted Advisor command
+program
+  .command('advisor')
+  .description('Run Trusted Advisor analyzer')
+  .option('--mode <mode>', 'Analysis mode (auto|live|offline)', 'auto')
+  .option('--region <region>', 'AWS region')
+  .option('--question <text>', 'Custom Trusted Advisor analysis question')
+  .action(async (options) => {
+    log.header('🛡️ Analyzing Trusted Advisor...');
+
+    const spinner = ora('Loading configuration...').start();
+    const cfg = await loadConfig(options);
+    const live = await ensureAwsLive(cfg, options);
+
+    spinner.text = 'Fetching Trusted Advisor checks...';
+    await analyzeTrustedAdvisor(cfg, live, options);
+    spinner.succeed('Trusted Advisor analysis complete');
+  });
+
+// Security Hub command
+program
+  .command('security')
+  .description('Run Security Hub analyzer')
+  .option('--mode <mode>', 'Analysis mode (auto|live|offline)', 'auto')
+  .option('--region <region>', 'AWS region')
+  .option('--question <text>', 'Custom Security Hub analysis question')
+  .action(async (options) => {
+    log.header('🔒 Analyzing Security Hub...');
+
+    const spinner = ora('Loading configuration...').start();
+    const cfg = await loadConfig(options);
+    const live = await ensureAwsLive(cfg, options);
+
+    spinner.text = 'Fetching Security Hub findings...';
+    await analyzeSecurityHub(cfg, live, options);
+    spinner.succeed('Security Hub analysis complete');
+  });
+
+// IAM command
+program
+  .command('iam')
+  .description('Run IAM permissions analyzer')
+  .option('--mode <mode>', 'Analysis mode (auto|live|offline)', 'auto')
+  .option('--region <region>', 'AWS region')
+  .option('--question <text>', 'Custom IAM analysis question')
+  .action(async (options) => {
+    log.header('🔑 Analyzing IAM permissions...');
+
+    const spinner = ora('Loading configuration...').start();
+    const cfg = await loadConfig(options);
+    const live = await ensureAwsLive(cfg, options);
+
+    spinner.text = 'Fetching IAM users, roles, and policies...';
+    await analyzeIam(cfg, live, options);
+    spinner.succeed('IAM analysis complete');
   });
 
 program
