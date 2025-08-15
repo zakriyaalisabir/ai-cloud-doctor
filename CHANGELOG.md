@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-01-10
+
+### Added
+- Comprehensive unit tests with Jest for 100% code coverage
+- Global npm package installation support
+- Enhanced formatAwsJson utility for structured data display
+- Improved cost calculation formula (input = input - cached)
+- Better error handling across all modules
+
+### Changed
+- Removed unsupported OpenAI API parameters (verbosity, prompt_cache_key)
+- Updated package.json for npm publishing
+- Enhanced test coverage with mocking for all external dependencies
+
+### Fixed
+- TypeScript compilation errors in OpenAI provider
+- Jest configuration for ESM modules
+- Cost calculation now properly accounts for cached tokens
+
 ## [1.4.0] - 2025-01-10
 
 ### Added

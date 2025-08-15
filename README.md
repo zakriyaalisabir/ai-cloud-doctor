@@ -13,6 +13,12 @@ AI-powered AWS analysis CLI tool that provides cost optimization, Lambda tuning,
 
 ## Installation
 
+### Option 1: Install from npm (Recommended)
+```bash
+npm install -g ai-cloud-doctor
+```
+
+### Option 2: Install from source
 ```bash
 git clone https://github.com/your-repo/ai-cloud-doctor
 cd ai-cloud-doctor
@@ -56,11 +62,13 @@ Or manually create `~/.ai-cloud-doctor-configs.json`:
 ## Usage
 
 ### Full Analysis
+
 ```bash
 ai-cloud-doctor scan --mode auto
 ```
 
 ### Individual Analyzers
+
 ```bash
 # Cost analysis
 ai-cloud-doctor cost --scanPeriod 7
@@ -76,11 +84,13 @@ ai-cloud-doctor tf --tf-plan ./plan.json
 ```
 
 ### Token Usage Tracking
+
 ```bash
 ai-cloud-doctor usage
 ```
 
 Shows detailed job history with separate token costs:
+
 ```
 Job ID   Name              Model        Date        In     Out    Cached Total   Cost
 -------- ----------------- ------------ ----------- ------ ------ ------ ------- --------
@@ -129,17 +139,3 @@ MIT License - see LICENSE file for details
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
-
-## Changelog
-
-### v0.2.0
-- Added separate input/output/cached token cost tracking
-- Configurable OpenAI parameters (service tier, reasoning effort, temperature, verbosity)
-- Improved configure command flow
-- Enhanced cost calculation accuracy
-
-### v0.1.0
-- Initial release
-- Cost, Lambda, Logs, and Terraform analyzers
-- Basic token tracking
-- Job history logging
