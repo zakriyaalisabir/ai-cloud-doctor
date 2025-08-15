@@ -8,8 +8,6 @@ import { analyzeCost } from "./analyzers/cost.js";
 import { analyzeTf } from "./analyzers/tf.js";
 import { analyzeLambda } from "./analyzers/lambda.js";
 import { analyzeLogs } from "./analyzers/logs.js";
-import { formatCostAnalysis, formatLambdaAnalysis, formatLogsAnalysis } from "./utils/formatter.js";
-import { formatMultipleTables } from "./utils/tableFormatter.js";
 import { getJobLogs } from "./utils/jobTracker.js";
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -176,25 +174,21 @@ program
 
     spinner.succeed(`Mode: ${live.live ? 'live' : 'offline'} | Scan period: ${cfg.scanPeriod || 30} days`);
 
-    const parts: string[] = [];
-
     const tfSpinner = ora('Analyzing Terraform plans...').start();
-    parts.push(await analyzeTf(cfg, options));
+    await analyzeTf(cfg, options);
     tfSpinner.succeed('Terraform analysis complete');
 
     const costSpinner = ora('Analyzing AWS costs...').start();
-    parts.push(await analyzeCost(cfg, live, options));
+    await analyzeCost(cfg, live, options);
     costSpinner.succeed('Cost analysis complete');
 
     const lambdaSpinner = ora('Analyzing Lambda functions...').start();
-    parts.push(await analyzeLambda(cfg, live, options));
+    await analyzeLambda(cfg, live, options);
     lambdaSpinner.succeed('Lambda analysis complete');
 
     const logsSpinner = ora('Analyzing CloudWatch logs...').start();
-    parts.push(await analyzeLogs(cfg, options, live));
+    await analyzeLogs(cfg, options, live);
     logsSpinner.succeed('Logs analysis complete');
-
-    console.log('\n' + parts.filter(Boolean).join('\n\n---\n\n'));
   });
 
 // Cost command
@@ -213,10 +207,8 @@ program
     const live = await ensureAwsLive(cfg, options);
 
     spinner.text = 'Fetching AWS cost data...';
-    const result = await analyzeCost(cfg, live, options);
+    await analyzeCost(cfg, live, options);
     spinner.succeed('Cost analysis complete');
-
-    // Analysis already displayed by analyzer
   });
 
 // Lambda command
@@ -235,10 +227,8 @@ program
     const live = await ensureAwsLive(cfg, options);
 
     spinner.text = 'Fetching Lambda data and metrics...';
-    const result = await analyzeLambda(cfg, live, options);
+    await analyzeLambda(cfg, live, options);
     spinner.succeed('Lambda analysis complete');
-
-    // Analysis already displayed by analyzer
   });
 
 // Terraform command
@@ -253,7 +243,7 @@ program
     const cfg = await loadConfig(options);
 
     spinner.text = 'Analyzing TF plan...';
-    const result = await analyzeTf(cfg, options);
+    await analyzeTf(cfg, options);
     spinner.succeed('TF plan analysis complete');
   });
 
@@ -273,10 +263,8 @@ program
     const live = await ensureAwsLive(cfg, options);
 
     spinner.text = 'Fetching log groups and building queries...';
-    const result = await analyzeLogs(cfg, options, live);
+    await analyzeLogs(cfg, options, live);
     spinner.succeed('Logs analysis complete');
-
-    console.log(formatLogsAnalysis(result));
   });
 
 program

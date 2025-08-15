@@ -1,8 +1,8 @@
 import type { AppConfig } from "../config.js";
 import { makeOpenAI } from "../providers/openai.js";
 import { logJob } from "../utils/jobTracker.js";
-import { promises as fs } from "node:fs";
 import { execSync } from "node:child_process";
+import { formatJsonData } from "../utils/tableFormatter.js";
 
 /**
  * Perform a cost analysis.  In live mode this function would normally
@@ -84,10 +84,9 @@ export async function analyzeCost(cfg: AppConfig, live: { live: boolean }, opts:
   });
   
   console.log('\n' + chalk.gray('─'.repeat(60)));
-  
-  // Display structured AWS cost data using formatAwsJson
-  const { formatAwsJson } = await import('../utils/tableFormatter.js');
-  console.log(formatAwsJson(costData));
+
+  // Display structured AWS cost data using formatJsonData
+  console.log(formatJsonData(costData));
   
   return `### Cost\nAnalysis complete`;
 }

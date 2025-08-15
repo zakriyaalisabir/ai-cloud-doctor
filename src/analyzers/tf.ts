@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import type { AppConfig } from "../config.js";
 import { makeOpenAI } from "../providers/openai.js";
 import { logJob } from "../utils/jobTracker.js";
+import { formatJsonData } from "../utils/tableFormatter.js";
 
 /**
  * Analyse a Terraform plan JSON file.  If a plan is provided this
@@ -94,9 +95,8 @@ export async function analyzeTf(cfg: AppConfig, opts: Record<string, any>): Prom
 
   console.log('\n' + chalk.gray('─'.repeat(60)));
 
-  // Display structured Terraform data using formatAwsJson
-  const { formatAwsJson } = await import('../utils/tableFormatter.js');
-  console.log(formatAwsJson(structuredData));
+  // Display structured Terraform Plan data using formatJsonData
+  console.log(formatJsonData(JSON.stringify(planData)));
 
   return `### Terraform\nAnalysis complete`;
 }
