@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-01-10
+
+### Added
+- IAM analyzer for users, roles, groups, and policies security assessment
+- Trusted Advisor analyzer with AWS Support API integration
+- Security Hub analyzer for security findings and compliance analysis
+- Enhanced tableFormatter with support for new analyzer data types
+- Individual commands for iam, advisor, and security analyzers
+- Comprehensive usage examples with inline comments in README
+
+### Changed
+- Scan command now includes IAM, Trusted Advisor, and Security Hub analysis
+- Updated README with detailed analyzer descriptions and output formats
+- Enhanced CLI with new analyzer commands and --question options
+
+### Fixed
+- Security Hub analyzer recreation after accidental deletion
+- Import statements for new analyzers in CLI
+
 ## [1.5.0] - 2025-01-10
 
 ### Added
