@@ -8,6 +8,9 @@ AI-powered AWS analysis CLI tool that provides cost optimization, Lambda tuning,
 - **Lambda Optimization**: Performance analysis and tuning suggestions for Lambda functions
 - **Log Analysis**: CloudWatch logs analysis with natural language queries
 - **Terraform Review**: Security and best practices analysis for Terraform plans
+- **IAM Analysis**: Users, roles, groups, and policies security assessment
+- **Trusted Advisor**: AWS optimization recommendations and best practices
+- **Security Hub**: Security findings and compliance analysis
 - **Token Tracking**: Complete OpenAI usage tracking with separate input/output/cached token costs
 - **Job History**: Detailed logs of all analysis jobs with unique IDs
 
@@ -70,26 +73,39 @@ ai-cloud-doctor scan --mode auto
 ### Individual Analyzers
 
 ```bash
-# Cost analysis
-ai-cloud-doctor cost --scanPeriod 7
-ai-cloud-doctor cost --question "Which services cost the most?"
-ai-cloud-doctor cost --region us-west-2 --scanPeriod 30
+# Cost analysis - AWS Cost Explorer integration
+ai-cloud-doctor cost --scanPeriod 7                              # Last 7 days cost analysis
+ai-cloud-doctor cost --question "Which services cost the most?"   # Custom cost question
+ai-cloud-doctor cost --region us-west-2 --scanPeriod 30          # Specific region, 30 days
 
-# Lambda optimization
-ai-cloud-doctor lambda --question "Find timeout issues"
-ai-cloud-doctor lambda --question "Which functions have high memory usage?"
-ai-cloud-doctor lambda --scanPeriod 7 --question "Show cold start problems"
+# Lambda optimization - Performance and cost tuning
+ai-cloud-doctor lambda --question "Find timeout issues"           # Identify timeout problems
+ai-cloud-doctor lambda --question "Which functions have high memory usage?" # Memory optimization
+ai-cloud-doctor lambda --scanPeriod 7 --question "Show cold start problems" # Cold start analysis
 
-# Log analysis
-ai-cloud-doctor logs --question "Show error patterns"
-ai-cloud-doctor logs --question "Find API Gateway 5xx errors"
-ai-cloud-doctor logs --question "Show database connection issues"
+# Log analysis - CloudWatch logs with natural language
+ai-cloud-doctor logs --question "Show error patterns"             # General error detection
+ai-cloud-doctor logs --question "Find API Gateway 5xx errors"     # Specific service errors
+ai-cloud-doctor logs --question "Show database connection issues" # Database troubleshooting
 
-# Terraform review
-ai-cloud-doctor tf --tf-plan ./plan.json
-ai-cloud-doctor tf --tf-plan ./plan.json --question "Focus on security risks"
-ai-cloud-doctor tf --tf-plan ./plan.json --question "Check IAM permissions"
-ai-cloud-doctor tf --tf-plan ./plan.json --question "Validate network security"
+# Terraform review - Security and best practices
+ai-cloud-doctor tf --tf-plan ./plan.json                         # Basic plan analysis
+ai-cloud-doctor tf --tf-plan ./plan.json --question "Focus on security risks" # Security focus
+ai-cloud-doctor tf --tf-plan ./plan.json --question "Check IAM permissions"   # IAM validation
+ai-cloud-doctor tf --tf-plan ./plan.json --question "Validate network security" # Network security
+
+# IAM analysis - Users, roles, and permissions audit
+ai-cloud-doctor iam --question "Find overprivileged users"        # Permission audit
+ai-cloud-doctor iam --question "Check for unused roles"           # Cleanup recommendations
+ai-cloud-doctor iam --question "Analyze policy attachments"       # Policy analysis
+
+# Trusted Advisor - AWS optimization recommendations
+ai-cloud-doctor advisor --question "Focus on cost optimization"   # Cost savings focus
+ai-cloud-doctor advisor --question "Show security recommendations" # Security improvements
+
+# Security Hub - Security findings and compliance
+ai-cloud-doctor security --question "Show critical findings"      # High-priority issues
+ai-cloud-doctor security --question "Check compliance status"     # Compliance monitoring
 ```
 
 ### Token Usage Tracking
@@ -110,10 +126,29 @@ a1b2c3d4 cost-analysis     gpt-5-nano   1/15/2024     150     75      0     225 
 
 All AI analysis uses structured sections:
 
+**Cost Analysis:**
 - 🔍 **ANALYSIS**: Key findings and patterns
 - 📊 **TOP COSTS**: Highest cost services
 - 💡 **RECOMMENDATIONS**: Optimization suggestions
 - ⚡ **QUICK WINS**: Immediate actions
+
+**Lambda Analysis:**
+- ⚠️ **PERFORMANCE ISSUES**: Function optimization needs
+- ⚙️ **OPTIMIZATIONS**: Performance improvements
+- 💰 **COST SAVINGS**: Resource optimization
+- ⚡ **QUICK FIXES**: Immediate improvements
+
+**IAM Analysis:**
+- 🚨 **SECURITY RISKS**: Permission vulnerabilities
+- 🔑 **ACCESS ISSUES**: User/role problems
+- 💡 **RECOMMENDATIONS**: Security improvements
+- ⚡ **IMMEDIATE ACTIONS**: Priority fixes
+
+**Security Hub:**
+- 🚨 **CRITICAL FINDINGS**: High-priority security issues
+- 🔒 **COMPLIANCE ISSUES**: Standards violations
+- 🛡️ **SECURITY RECOMMENDATIONS**: Remediation steps
+- ⚡ **IMMEDIATE ACTIONS**: Urgent security fixes
 
 ## Files
 
